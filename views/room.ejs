@@ -1,0 +1,43 @@
+<html translate="no">
+  <head>
+    <title>Vilard's Quiz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/img/Logo.png">
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body class="background">
+    <div class="container">
+      <div>
+        <a href="/"><img src="/img/Title.png"></a>
+      </div> 
+      <div class="judgePlace">
+        <div class="neon-text" style="max-height: 100%;" id="judgeLabel"></div>
+      </div>
+      <div></div>
+      <div class="playersPlace">
+        <div class="glow" style="margin-bottom: 8px;">Players</div>
+        <div id="playerLabels"></div>
+      </div>   
+      <div id="gamefield" class="gamefield">
+        <div id="rounds"></div>
+        <div id="questionField" class="questionField" style="display: none;"></div>
+      </div>  
+      <div class="playersPlace2">
+        <div class="glow" style="margin-bottom: 8px;">Players</div>
+        <div id="playerLabels2"></div>
+      </div>  
+      <div></div>   
+      <div class="activeField">
+        <div id="announcement"></div>
+        <div id="answerField"></div>
+        <div id="waitForJudge" style="display: none;">Waiting for judge</div>
+      </div>  
+      <div></div>
+    </div>
+  </body>
+  <script>
+    const roomName = "<%= roomName %>"
+  </script>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="./frontendRoom.js"></script>
+</html>

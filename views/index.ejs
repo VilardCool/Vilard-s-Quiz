@@ -1,0 +1,49 @@
+<html translate="no">
+  <head>
+    <title>Vilard's Quiz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/img/Logo.png">
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body class="background">
+    <div style="text-align: center;">
+      <img src="/img/Title.png">
+    </div>
+    <div id="menu" class="menu">
+        <div class="mainMenu">
+          <div class="dropInput" id="image_p_p">
+            <input type="file" style="position: relative; z-index: 1" id="file-input_p_p" accept="image/*" hidden>
+            <img id="img_p_p" style="max-width: 100%;" src="/img/profilePicture.png">
+          </div>
+          <input id="profileName" type="text" class="form" placeholder="User" style="margin-bottom: 10%;">
+          <form action="/room" method="post" enctype="multipart/form-data">
+            <input id="room" name="room" type="text" class="form" placeholder="Room name" required>
+            <input id="pack" name="pack" type="file" style="width: 100%;" required>
+            <button id="host" type="submit" class="confirmButton true">Host</button>
+          </form>
+          <button id="createButton" class="confirmButton b">Create</button>
+        </div>
+        <div class="rooms">
+          <div style="margin-bottom: 8px;">Rooms</div>
+          <div id="roomContainer"></div>
+        </div>
+    </div>
+
+    <div id="create" style="display: none;">
+      <button id="menuButton">Menu</button>
+      
+      <div>
+        <h2 style="display: inline-block;">Pack name:</h2>
+        <input id="packName" type="text" placeholder="Name">
+        <button id="addRound" style="display: block;">Add round</button>
+      </div>
+
+      <button id="download">Download</button>
+    </div>
+  </body>
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script src="./classes/packCreator.js"></script>
+<script src="./classes/dropZone.js"></script>
+<script src="./classes/playerProfile.js"></script>
+<script src="./frontendMain.js"></script>
+</html>

@@ -15,6 +15,18 @@ const port = process.env.PORT || 3000
 
 const rooms = {}
 
+testPack = require('./Test.json')
+
+rooms["Демонстрація"] = {
+    name: "Демонстрація",
+    judge: null,
+    players: {},
+    pack: testPack,
+    turn: null,
+    currentRound: Object.keys(Object.values(testPack)[0].rounds)[0],
+    currentQuestion: null
+  }
+
 app.get('/', (req, res) => {
   res.render('index', { rooms: rooms })
 })

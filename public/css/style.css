@@ -88,8 +88,8 @@
     padding:8px;
     text-align: center;
     user-select: none;
-    height: 500px;
-    min-width: 200px;
+    /*height: 500px;
+    min-width: 200px;*/
     background-color: rgba(120, 30, 200, 0.25);
   }
 
@@ -98,8 +98,8 @@
     padding:8px;
     text-align: center;
     user-select: none;
-    height: 500px;
-    min-width: 200px;
+    /*height: 500px;
+    min-width: 200px;*/
     background-color: rgba(120, 30, 200, 0.25);
   }
 }
@@ -179,19 +179,19 @@
 }
 
 .gamefield {
-  min-height: 500px;
+  /*min-height: 500px;*/
   padding: 1%;
   background-color: rgba(120, 30, 200, 0.25);
 }
 
 .activeField {
-  min-height: 100px;
-      text-align: center;
-      user-select: none;
-      background-color: rgba(120, 30, 200, 0.25);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+  /*min-height: 100px;*/
+  text-align: center;
+  user-select: none;
+  background-color: rgba(120, 30, 200, 0.25);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .questionsButtons {
@@ -255,7 +255,7 @@
 
 .confirmButton {
   width: 200px;
-  height: 50px;
+  /*height: 50px;*/
   color: #716eef;
   border-color: #716eef;
 }
@@ -318,7 +318,7 @@
 
 input[type="file"]::file-selector-button {
   width: 200px;
-  height: 50px;
+  /*/height: 50px;*/
   color: #716eef;
   border-color: #716eef;
 }

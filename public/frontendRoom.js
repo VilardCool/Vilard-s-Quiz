@@ -42,6 +42,12 @@ socket.on('loadRoom', (game) => {
   roundPlace.children[0].style = ""
 })
 
+socket.on('alreadyInRoom', () => {
+  pause = document.querySelector('#pauseMenu')
+  pause.style = "position: absolute; height: 98%; width: 98%; font-size: 40px; z-index:1; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center;"
+  pause.textContent = "You already in game!"
+})
+
 socket.on('updateTurn', (player) => {
   turn = player
   if (!document.querySelector('#questionField').innerHTML){
@@ -97,7 +103,7 @@ socket.on('judgeChange', (judge) => {
   field = document.querySelector('#questionField')
   waitForJudge = document.querySelector('#waitForJudge')
   if (!judge) {
-    text = "<vacant>"
+    text = "vacant"
     announcement.style.display = "none"
     field.style.display = "none"
     waitForJudge.style.display = ""
@@ -110,8 +116,11 @@ socket.on('judgeChange', (judge) => {
     waitForJudge.style.display = "none"
     judgePresent = true
   }
-  picture = "/img/profilePicture.png"
-  if (judge.picture) picture = judge.picture
+  picture = "/img/Waiting.png"
+  if (judge) {
+    if (judge.picture) picture = judge.picture
+    else picture = "/img/profilePicture.png"
+  }
   document.querySelector('#judgeLabel').innerHTML = `<img class="profilePicture" src="${picture}">
   <div>Judge: ${text}</div>`
 })

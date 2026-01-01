@@ -7,9 +7,14 @@ if (!clientUuid) {
 } else {
   socket.emit('connected', {
     uuid: clientUuid
-  }
-)
+  })
 }
+
+socket.on('alreadyInRoom', () => {
+  pause = document.querySelector('#pauseMenu')
+  pause.style = "position: absolute; height: 98%; width: 98%; font-size: 40px; z-index:1; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center;"
+  pause.textContent = "You already in game!"
+})
 
 socket.on('takeUUID', (uuid) => {
   localStorage.setItem("CLIENT_UUID", uuid)

@@ -64,16 +64,22 @@ io.on('connection', (socket) => {
         name: "User",
         picture: "",
         score: 0 ,
-        room: null
+        room: null,
+        id: socket.id
       }
+      idPlayers[socket.id] = uuid
     }
     else {
-      socket.emit('loadProfile', ({name: backEndPlayers[uuid].name,
-        picture: backEndPlayers[uuid].picture
-      }))
+      if (!backEndPlayers[uuid].id){
+        idPlayers[socket.id] = uuid
+        backEndPlayers[uuid].id = socket.id
+
+        socket.emit('loadProfile', ({name: backEndPlayers[uuid].name,
+          picture: backEndPlayers[uuid].picture
+        }))
+      }
+      else socket.emit('alreadyInRoom')
     }
-    
-    idPlayers[socket.id] = uuid
 
     socket.emit('updateRooms', rooms)
   })
@@ -172,6 +178,7 @@ io.on('connection', (socket) => {
 
       backEndPlayers[idPlayers[socket.id]].score = 0
       backEndPlayers[idPlayers[socket.id]].room = null
+      backEndPlayers[idPlayers[socket.id]].id = null
       delete idPlayers[socket.id]
       io.emit('updateRooms', rooms)
     }

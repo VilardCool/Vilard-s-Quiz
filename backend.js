@@ -120,6 +120,7 @@ io.on('connection', (socket) => {
     io.emit('updateRooms', rooms)
     io.to(rooms[room].judge).emit('judgeChange', backEndPlayers[idPlayers[rooms[room].judge]])
     io.to(rooms[room].judge).emit('updatePlayers', rooms[room].players)
+    io.to(rooms[room].judge).emit('judgeControl')
     if (rooms[room].turn) io.to(rooms[room].judge).emit('updateTurn', rooms[room].turn)
     for (const player in rooms[room].players) {
       io.to(player).emit('judgeChange', backEndPlayers[idPlayers[rooms[room].judge]])
@@ -130,6 +131,25 @@ io.on('connection', (socket) => {
 
   socket.on('changeProfilePicture', ({image}) => {
     backEndPlayers[idPlayers[socket.id]].picture = image
+  })
+
+  socket.on('skipRound', ({room}) => {
+    lastRound = 0
+    rounds = Object.keys(Object.values(rooms[room].pack)[0].rounds)
+    currentCount = rounds.indexOf(rooms[room].currentRound)
+    if (rounds.length > currentCount + 1) rooms[room].currentRound = rounds[currentCount + 1]
+    else lastRound = 1
+
+    io.to(rooms[room].judge).emit('updatePlayers', rooms[backEndPlayers[idPlayers[socket.id]].room].players)
+    io.to(rooms[room].judge).emit('showQuestions', ({player: rooms[room].turn, question: rooms[room].currentQuestion}))
+    io.to(rooms[room].judge).emit('updateTurn', (rooms[room].turn))
+    if (lastRound) io.to(rooms[room].judge).emit('gameFinished')
+    for (const play in rooms[room].players) {
+      io.to(play).emit('updatePlayers', rooms[room].players)
+      io.to(play).emit('showQuestions', ({player: rooms[room].turn, question: rooms[room].currentQuestion}))
+      io.to(play).emit('updateTurn', (rooms[room].turn))
+      if (lastRound) io.to(play).emit('gameFinished')
+    }
   })
 
   socket.on('changeProfileName', ({name}) => {

@@ -125,6 +125,15 @@ socket.on('judgeChange', (judge) => {
   <div>Judge: ${text}</div>`
 })
 
+socket.on('judgeControl', () => {
+  document.querySelector('#roundControl').innerHTML = `<button id="skipRound" class="confirmButton true">Skip round</button>`
+  document.querySelector('#skipRound').addEventListener('click', () => {
+          socket.emit('skipRound',  {
+            room: roomName
+          })
+        })
+})
+
 socket.on('questionDisplay', ({player, question}) => {
   announcement = document.querySelector('#announcement')
   announcement.textContent = ``
@@ -170,7 +179,7 @@ socket.on('questionDisplay', ({player, question}) => {
             />
             <button id="answerButton" class="confirmButton true">
               Send
-          </button>
+            </button>
           </div>`
         document.querySelector('#answerButton').addEventListener('click', () => {
           var answer = document.querySelector('#answerInput').value

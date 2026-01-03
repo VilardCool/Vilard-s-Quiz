@@ -334,6 +334,26 @@ socket.on('showQuestions', ({player, question}) => {
   announcement.textContent = `Turn: ${frontEndPlayers[player].name}`
 })
 
+socket.on('showQuestionsSkip', () => {
+  field = document.querySelector('#questionField')
+  field.style.display = "none"
+  field.textContent = ""
+  answerField = document.querySelector('#answerField')
+  answerField.innerHTML = ``
+  quest = document.querySelector('#questions')
+
+  quest.style.display = ""
+
+  rounds = document.querySelector('#rounds')
+  toDelRound = rounds.firstChild
+  rounds.removeChild(toDelRound)
+
+  delete questionList.rounds[(Object.keys(questionList.rounds)[0])]
+
+  nextRound = rounds.firstChild
+  if (nextRound) nextRound.style = ""
+})
+
 socket.on('gameFinished', () => {
   field = document.querySelector('#questionField')
   field.style = ""

@@ -361,6 +361,7 @@ socket.on('gameFinished', () => {
   answerField = document.querySelector('#answerField')
   answerField.innerHTML = ``
   quest = document.querySelector('#questions')
+  document.querySelector('#roundControl').innerHTML = "";
 
   var bestPlayer = Object.keys(frontEndPlayers)[0]
   for (play in frontEndPlayers){

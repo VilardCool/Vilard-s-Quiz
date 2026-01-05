@@ -200,8 +200,16 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('keydown', ({room, keycode}) => {
-    socket.to(rooms[room].players).broadcast.emit('updatePlayers', rooms[room].players)
+  socket.on('playerQuestionKeydown', ({room, nextPlayer}) => {
+    rooms[room].turn = nextPlayer
+    io.to(rooms[room].judge).emit('questionDisplay', {
+      player: nextPlayer,
+      question: rooms[room].currentQuestion})
+    for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
+      io.to(player).emit('questionDisplay', {
+        player: nextPlayer,
+        question: rooms[room].currentQuestion})
+    }
   })
 
   socket.on('playerQuestion', ({room, question, nextPlayer}) => {

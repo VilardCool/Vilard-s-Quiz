@@ -374,13 +374,14 @@ socket.on('gameFinished', () => {
   announcement.textContent = ``
 })
 
-/*
 window.addEventListener('keydown', (event) => {
   if (event.code === 'Space') {
-    socket.emit('keydown', {room: roomName, keycode: 'Space'})
+    socket.emit('playerQuestionKeydown',  {
+          room: roomName,
+          nextPlayer: socket.id
+        })
   }
 })
-*/
 
 document.querySelector('#gamefield').addEventListener('click', (
   event) => {

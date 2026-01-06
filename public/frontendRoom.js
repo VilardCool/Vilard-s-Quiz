@@ -134,7 +134,7 @@ socket.on('judgeControl', () => {
         })
 })
 
-socket.on('questionDisplay', ({player, question}) => {
+socket.on('questionDisplay', ({question}) => {
   announcement = document.querySelector('#announcement')
   announcement.textContent = ``
   quest = document.querySelector('#questions')
@@ -151,7 +151,9 @@ socket.on('questionDisplay', ({player, question}) => {
       if (questText) field.innerHTML +=`<div>${questText}</div>`
       break
   }
+})
 
+socket.on('provideAnswer', ({player, question}) => {
   info = question.split('_')
   numRound = info[1]
   numQuestion = info[2]
@@ -378,7 +380,7 @@ window.addEventListener('keydown', (event) => {
   if (event.code === 'Space') {
     socket.emit('playerQuestionKeydown',  {
           room: roomName,
-          nextPlayer: socket.id
+          player: socket.id
         })
   }
 })

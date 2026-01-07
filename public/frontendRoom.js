@@ -13,6 +13,8 @@ var questionList = {}
 
 var turn = null
 
+var canAnswer = false
+
 var judge = false
 
 socket.emit('playerConnect',  {
@@ -134,7 +136,8 @@ socket.on('judgeControl', () => {
         })
 })
 
-socket.on('questionDisplay', ({question}) => {
+socket.on('questionDisplay', ({question, available}) => {
+  canAnswer = available
   announcement = document.querySelector('#announcement')
   announcement.textContent = ``
   quest = document.querySelector('#questions')
@@ -153,7 +156,9 @@ socket.on('questionDisplay', ({question}) => {
   }
 })
 
-socket.on('provideAnswer', ({player, question}) => {
+socket.on('provideAnswer', ({player, question, available}) => {
+  canAnswer = available
+  
   info = question.split('_')
   numRound = info[1]
   numQuestion = info[2]
@@ -377,7 +382,8 @@ socket.on('gameFinished', () => {
 })
 
 window.addEventListener('keydown', (event) => {
-  if (event.code === 'Space') {
+  console.log(canAnswer)
+  if (event.code === 'Space' && turn == socket.id && canAnswer) {
     socket.emit('playerQuestionKeydown',  {
           room: roomName,
           player: socket.id

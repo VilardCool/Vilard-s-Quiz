@@ -32,6 +32,7 @@ app.post("/room", upload.single('pack'), (req, res) => {
     players: {},
     pack: jsonContent,
     turn: null,
+    canAnswer: false,
     currentRound: Object.keys(Object.values(jsonContent)[0].rounds)[0],
     currentQuestion: null
   }
@@ -202,26 +203,30 @@ io.on('connection', (socket) => {
 
   socket.on('playerQuestionKeydown', ({room, player}) => {
     rooms[room].turn = player
+    rooms[room].canAnswer = false
     io.to(rooms[room].judge).emit('provideAnswer', {
       player: player,
-      question: rooms[room].currentQuestion})
+      question: rooms[room].currentQuestion,
+      available: false})
     for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(player).emit('provideAnswer', {
         player: player,
-        question: rooms[room].currentQuestion})
+        question: rooms[room].currentQuestion,
+        available: false})
     }
   })
 
   socket.on('playerQuestion', ({room, question, nextPlayer}) => {
     rooms[room].currentQuestion = question
     rooms[room].turn = nextPlayer
+    rooms[room].canAnswer = true
     io.to(rooms[room].judge).emit('questionDisplay', {
-      player: nextPlayer,
-      question: question})
+      question: question,
+      available: true})
     for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(player).emit('questionDisplay', {
-        player: nextPlayer,
-        question: question})
+        question: question,
+        available: true})
     }
   })
 

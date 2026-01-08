@@ -154,7 +154,31 @@ socket.on('questionDisplay', ({question, available}) => {
       if (questText) field.innerHTML +=`<div>${questText}</div>`
       break
   }
+
+  activeField = document.querySelector('.activeField')
+  activeField.style.display = ""
+
+  answerField = document.querySelector('#answerField')
+  answerField.innerHTML = `<div id="myProgress">
+    <div id="myBar"></div>
+  </div>`
+
+  move()
 })
+
+function move() {
+  var elem = document.getElementById("myBar");
+  var width = 100;
+  var id = setInterval(frame, 50);
+  function frame() {
+    if (width <= 0) {
+      clearInterval(id);
+    } else {
+      width--;
+      elem.style.width = width + "%";
+    }
+  }
+}
 
 socket.on('provideAnswer', ({player, question, available}) => {
   canAnswer = available
@@ -382,7 +406,6 @@ socket.on('gameFinished', () => {
 })
 
 window.addEventListener('keydown', (event) => {
-  console.log(canAnswer)
   if (event.code === 'Space' && turn == socket.id && canAnswer) {
     socket.emit('playerQuestionKeydown',  {
           room: roomName,

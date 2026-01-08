@@ -328,3 +328,14 @@ input[type="file"]::file-selector-button:hover {
   box-shadow: inset 0 0 0.55em 0em var(--color-a);
   border-color: var(--color-a);
 }
+
+#myProgress {
+  width: 300px;
+  background-color: grey;
+}
+
+#myBar {
+  width: 100%;
+  height: 30px;
+  background-color: green;
+}

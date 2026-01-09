@@ -216,6 +216,13 @@ io.on('connection', (socket) => {
     }
   })
 
+  socket.on('skipQuestion', ({room}) => {
+    io.to(rooms[room].judge).emit('showQuestions', ({player: rooms[room].turn, question: rooms[room].currentQuestion}))
+    for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
+      io.to(player).emit('showQuestions', ({player: rooms[room].turn, question: rooms[room].currentQuestion}))
+    }
+  })
+
   socket.on('playerQuestion', ({room, question, nextPlayer}) => {
     rooms[room].currentQuestion = question
     rooms[room].turn = nextPlayer

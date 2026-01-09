@@ -173,6 +173,9 @@ function move() {
   function frame() {
     if (width <= 0) {
       clearInterval(id);
+      socket.emit('skipQuestion',  {
+            room: roomName
+          })
     } else {
       width--;
       elem.style.width = width + "%";

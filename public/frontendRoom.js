@@ -15,7 +15,13 @@ var turn = null
 
 var canAnswer = false
 
-var judge = false
+var judgeG = false
+
+var paused = false;
+
+var interval;
+
+var width = 100;
 
 socket.emit('playerConnect',  {
   room: roomName
@@ -100,6 +106,7 @@ socket.on('updatePlayers', (backEndPlayers) => {
 })
 
 socket.on('judgeChange', (judge) => {
+  judgeG = judge
   var text
   announcement = document.querySelector('#announcement')
   field = document.querySelector('#questionField')
@@ -136,8 +143,11 @@ socket.on('judgeControl', () => {
         })
 })
 
-socket.on('questionDisplay', ({question, available}) => {
-  canAnswer = available
+socket.on('questionDisplay', ({question, widthS}) => {
+  clearInterval(interval);
+  paused = false
+  width = widthS
+
   announcement = document.querySelector('#announcement')
   announcement.textContent = ``
   quest = document.querySelector('#questions')
@@ -163,16 +173,17 @@ socket.on('questionDisplay', ({question, available}) => {
     <div id="myBar"></div>
   </div>`
 
-  move()
+  if (socket.id != turn) canAnswer = true
+
+  interval = setInterval(frame, 50);
 })
 
-function move() {
+function frame() {
+  console.log(width)
   var elem = document.getElementById("myBar");
-  var width = 100;
-  var id = setInterval(frame, 50);
-  function frame() {
+  if(!paused) {
     if (width <= 0) {
-      clearInterval(id);
+      clearInterval(interval);
       socket.emit('skipQuestion',  {
             room: roomName
           })
@@ -183,8 +194,10 @@ function move() {
   }
 }
 
-socket.on('provideAnswer', ({player, question, available}) => {
-  canAnswer = available
+socket.on('provideAnswer', ({player, question}) => {
+  paused = true
+  canAnswer = false
+  clearInterval(interval);
   
   info = question.split('_')
   numRound = info[1]
@@ -341,6 +354,10 @@ socket.on('checkAnswer', ({player, question, correctAnswer, answer}) => {
 })
 
 socket.on('showQuestions', ({player, question}) => {
+  clearInterval(interval);
+  width = 100
+  canAnswer = false
+
   field = document.querySelector('#questionField')
   field.style.display = "none"
   field.textContent = ""
@@ -369,6 +386,10 @@ socket.on('showQuestions', ({player, question}) => {
 })
 
 socket.on('showQuestionsSkip', () => {
+  clearInterval(interval);
+  width = 100
+  canAnswer = false
+
   field = document.querySelector('#questionField')
   field.style.display = "none"
   field.textContent = ""
@@ -409,10 +430,11 @@ socket.on('gameFinished', () => {
 })
 
 window.addEventListener('keydown', (event) => {
-  if (event.code === 'Space' && turn == socket.id && canAnswer) {
+  if (event.code === 'Space' && canAnswer && socket.id != judgeG.id) {
     socket.emit('playerQuestionKeydown',  {
           room: roomName,
-          player: socket.id
+          player: socket.id,
+          width: width
         })
   }
 })
@@ -459,6 +481,7 @@ document.querySelector('#gamefield').addEventListener('click', (
           nextPlayer: socket.id
         })
       }
+      canAnswer = true
     }
   }
 )

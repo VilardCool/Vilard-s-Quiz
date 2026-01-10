@@ -33,6 +33,7 @@ app.post("/room", upload.single('pack'), (req, res) => {
     pack: jsonContent,
     turn: null,
     canAnswer: false,
+    width: 100,
     currentRound: Object.keys(Object.values(jsonContent)[0].rounds)[0],
     currentQuestion: null
   }
@@ -201,22 +202,22 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('playerQuestionKeydown', ({room, player}) => {
+  socket.on('playerQuestionKeydown', ({room, player, width}) => {
     rooms[room].turn = player
     rooms[room].canAnswer = false
+    rooms[room].width = width
     io.to(rooms[room].judge).emit('provideAnswer', {
       player: player,
-      question: rooms[room].currentQuestion,
-      available: false})
+      question: rooms[room].currentQuestion})
     for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(player).emit('provideAnswer', {
         player: player,
-        question: rooms[room].currentQuestion,
-        available: false})
+        question: rooms[room].currentQuestion})
     }
   })
 
   socket.on('skipQuestion', ({room}) => {
+    rooms[room].width = 100
     io.to(rooms[room].judge).emit('showQuestions', ({player: rooms[room].turn, question: rooms[room].currentQuestion}))
     for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(player).emit('showQuestions', ({player: rooms[room].turn, question: rooms[room].currentQuestion}))
@@ -229,11 +230,11 @@ io.on('connection', (socket) => {
     rooms[room].canAnswer = true
     io.to(rooms[room].judge).emit('questionDisplay', {
       question: question,
-      available: true})
+      widthS: rooms[room].width})
     for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(player).emit('questionDisplay', {
         question: question,
-        available: true})
+        widthS: rooms[room].width})
     }
   })
 
@@ -278,7 +279,7 @@ io.on('connection', (socket) => {
     score = rooms[room].players[player].score
 
     if (quest.bonus == "punishment") rooms[room].players[player].score = Math.max(0, score - Number(quest.cost))
-    
+    /*
     var players = Object.keys(rooms[backEndPlayers[idPlayers[socket.id]].room].players)
     var nextPlayer = player
     if (players.length > 1) {
@@ -286,11 +287,19 @@ io.on('connection', (socket) => {
       nextPlayer = players[Math.floor(Math.random() * players.length)]
       rooms[room].turn = nextPlayer
     }
+    */
 
-    sendAnswer(room, nextPlayer, question)
+    io.to(rooms[room].judge).emit('updatePlayers', rooms[backEndPlayers[idPlayers[socket.id]].room].players)
+    io.to(rooms[room].judge).emit('questionDisplay', {question: question, widthS: rooms[room].width})
+    for (const play in rooms[room].players) {
+      io.to(play).emit('updatePlayers', rooms[room].players)
+      io.to(player).emit('questionDisplay', {question: question, widthS: rooms[room].width})
+    }
   })
 
   function sendAnswer (room, player, question){
+    rooms[room].width = 100
+
     info = question.split('_')
     round = Object.keys(Object.values(rooms[room].pack)[0].rounds)[info[1]]
     Object.values(rooms[room].pack)[0].rounds[round].questions[question].passed = 1

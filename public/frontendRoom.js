@@ -15,9 +15,9 @@ var turn = null
 
 var canAnswer = false
 
-var judgeG = false
+var alreadyAnswer = false
 
-var paused = false;
+var judgeG = false
 
 var interval;
 
@@ -145,8 +145,10 @@ socket.on('judgeControl', () => {
 
 socket.on('questionDisplay', ({question, widthS}) => {
   clearInterval(interval);
-  paused = false
   width = widthS
+  if (socket.id != turn && !alreadyAnswer) {
+    canAnswer = true
+  }
 
   announcement = document.querySelector('#announcement')
   announcement.textContent = ``
@@ -169,33 +171,37 @@ socket.on('questionDisplay', ({question, widthS}) => {
   activeField.style.display = ""
 
   answerField = document.querySelector('#answerField')
-  answerField.innerHTML = `<div id="myProgress">
+  answerField.innerHTML = `<button id="takeQuestion"><div id="myProgress">
     <div id="myBar"></div>
-  </div>`
+  </div></button>`
 
-  if (socket.id != turn) canAnswer = true
+  document.querySelector('#takeQuestion').addEventListener('click', () => {
+    if (canAnswer && socket.id != judgeG.id) {
+      socket.emit('playerQuestionKeydown',  {
+        room: roomName,
+        player: socket.id,
+        width: width
+      })
+    }
+  })
 
   interval = setInterval(frame, 50);
 })
 
 function frame() {
-  console.log(width)
   var elem = document.getElementById("myBar");
-  if(!paused) {
-    if (width <= 0) {
-      clearInterval(interval);
-      socket.emit('skipQuestion',  {
-            room: roomName
-          })
-    } else {
-      width--;
-      elem.style.width = width + "%";
-    }
+  if (width <= 0) {
+    clearInterval(interval);
+    socket.emit('skipQuestion',  {
+      room: roomName
+    })
+  } else {
+    width--;
+    elem.style.width = width + "%";
   }
 }
 
 socket.on('provideAnswer', ({player, question}) => {
-  paused = true
   canAnswer = false
   clearInterval(interval);
   
@@ -214,6 +220,8 @@ socket.on('provideAnswer', ({player, question}) => {
   answerField.innerHTML = ""
 
   if(player == socket.id){
+    alreadyAnswer = true
+    
     switch (questionInfo.type){
       case "simple":
         answerField.innerHTML += 
@@ -357,6 +365,7 @@ socket.on('showQuestions', ({player, question}) => {
   clearInterval(interval);
   width = 100
   canAnswer = false
+  alreadyAnswer = false
 
   field = document.querySelector('#questionField')
   field.style.display = "none"
@@ -389,6 +398,7 @@ socket.on('showQuestionsSkip', () => {
   clearInterval(interval);
   width = 100
   canAnswer = false
+  alreadyAnswer = false
 
   field = document.querySelector('#questionField')
   field.style.display = "none"

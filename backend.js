@@ -209,8 +209,8 @@ io.on('connection', (socket) => {
     io.to(rooms[room].judge).emit('provideAnswer', {
       player: player,
       question: rooms[room].currentQuestion})
-    for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
-      io.to(player).emit('provideAnswer', {
+    for (const playerC in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
+      io.to(playerC).emit('provideAnswer', {
         player: player,
         question: rooms[room].currentQuestion})
     }

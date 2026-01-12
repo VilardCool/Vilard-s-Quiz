@@ -41,6 +41,28 @@ app.post("/room", upload.single('pack'), (req, res) => {
   res.redirect(req.body.room)
 })
 
+app.post("/test", (req, res) => {
+  if (rooms["test"] != null) { 
+    return res.redirect('/')
+  }
+
+  const jsonContent = require('./public/packs/Test.json');
+
+  rooms["test"] = {
+    name: "test",
+    judge: null,
+    players: {},
+    pack: jsonContent,
+    turn: null,
+    canAnswer: false,
+    width: 100,
+    currentRound: Object.keys(Object.values(jsonContent)[0].rounds)[0],
+    currentQuestion: null
+  }
+
+  res.redirect("test")
+})
+
 app.get('/:room', (req, res) => {
   if (rooms[req.params.room] == null) { 
     return res.redirect('/')

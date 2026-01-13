@@ -8,13 +8,12 @@
   <body class="background">
     <div id="pauseMenu"></div>
     <div class="container">
-      <div>
+      <div style="grid-area: title">
         <a href="/"><img src="/img/Title.png"></a>
-      </div> 
+      </div>
       <div class="judgePlace">
         <div class="neon-text" style="max-height: 100%;" id="judgeLabel"></div>
       </div>
-      <div></div>
       <div class="playersPlace">
         <div class="glow" style="margin-bottom: 8px;">Players</div>
         <div id="playerLabels"></div>
@@ -27,13 +26,13 @@
         <div class="glow" style="margin-bottom: 8px;">Players</div>
         <div id="playerLabels2"></div>
       </div>  
-      <div id="roundControl"></div>   
+      <div id="roundControl" style="grid-area: control"></div>   
       <div class="activeField">
         <div id="announcement"></div>
         <div id="answerField"></div>
         <div id="waitForJudge" style="display: none;">Waiting for judge</div>
       </div>  
-      <div></div>
+      <div style="grid-area: points"></div>
     </div>
   </body>
   <script>

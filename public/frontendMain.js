@@ -43,3 +43,17 @@ socket.on('updateRooms', (backEndRooms) => {
       ${count}</button></a>`
   }
 })
+
+document.querySelector('#host').addEventListener('click', (event) => {
+  hostMenu = document.querySelector('#hostMenu')
+  hostMenu.style = "position: absolute; height: 90%; width: 90%; font-size: 40px; z-index:1; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center;"
+
+  socket.emit('requestProposedRoom')
+})
+
+socket.on('proposedRoomArray', (files) => {
+  hostMenu = document.querySelector('#hostMenu')
+  for (file in files) {
+    hostMenu.textContent += files[file].split('.')[0]
+  }
+})

@@ -1,3 +1,5 @@
+const fs = require('fs')
+
 const express = require('express')
 const app = express()
 const server = require('http').Server(app)
@@ -74,10 +76,19 @@ app.get('/:room', (req, res) => {
   })
 })
 
+const packDir = "./public/packs"
+
 const backEndPlayers = {}
 const idPlayers = {}
 
 io.on('connection', (socket) => {
+  socket.on('requestProposedRoom', () => {
+    fs.readdir(packDir, (err, files) => {
+      if (err) throw err;
+      socket.emit('proposedRoomArray', files)
+    })
+  })
+
   socket.on('giveUUID', () => {
     socket.emit('takeUUID', crypto.randomUUID())
   })

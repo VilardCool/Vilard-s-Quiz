@@ -8,6 +8,7 @@
   </head>
   <body class="background">
     <div id="pauseMenu"></div>
+    <div id="hostMenu"></div>
     <div style="text-align: center;">
       <img src="/img/Title.png">
     </div>
@@ -18,19 +19,23 @@
             <img id="img_p_p" style="max-width: 100%;" src="/img/profilePicture.png">
           </div>
           <input id="profileName" type="text" class="form" placeholder="User" style="margin-bottom: 10%;">
+          <button id="host" class="confirmButton true">Host</button>
+          <!--
           <form action="/room" method="post" enctype="multipart/form-data">
             <input id="room" name="room" type="text" class="form" placeholder="Room name" required>
             <input id="pack" name="pack" type="file" style="width: 100%;" required>
             <button id="host" type="submit" class="confirmButton true">Host</button>
           </form>
-          <form action="/proposedRoom" method="post">
-            <input name="proposedRoom" type="text" value="Test" style="display: none;">
-            <button type="submit" class="confirmButton true">Test</button>
+          -->
+          <form action="/proposedRoom" method="post" style="display: none;">
+            <input id="proposedRoom" name="proposedRoom" type="text" value="Test">
+            <button id="proposedHost" type="submit" class="confirmButton true">Test</button>
           </form>
+          <!--
           <button id="createButton" class="confirmButton b">Create</button>
           <p>Packs:</p>
           <a href="/packs/Test_2.json" download="НМТ з історії 2024">НМТ з історії 2024</a>
-          <!--
+          
           <p>Packs:</p>
           <a href="/packs/Test.json" download="НМТ з математики 2025">НМТ з математики 2025</a>
           <div></div>

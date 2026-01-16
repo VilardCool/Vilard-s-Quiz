@@ -48,7 +48,7 @@ app.post("/proposedRoom", (req, res) => {
     return res.redirect('/')
   }
 
-  const jsonContent = require('./public/packs/Test.json');
+  const jsonContent = require(`./public/packs/${req.body.proposedRoom}.json`);
 
   rooms[req.body.proposedRoom] = {
     name: req.body.proposedRoom,

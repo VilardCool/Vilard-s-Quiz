@@ -54,6 +54,11 @@ document.querySelector('#host').addEventListener('click', (event) => {
 socket.on('proposedRoomArray', (files) => {
   hostMenu = document.querySelector('#hostMenu')
   for (file in files) {
-    hostMenu.textContent += files[file].split('.')[0]
+    //hostMenu.textContent += files[file].split('.')[0]
+    hostMenu.innerHTML += `<button id="${files[file].split('.')[0]}" class="confirmButton true">${files[file].split('.')[0]}</button>`
+    document.querySelector(`#${files[file].split('.')[0]}`).addEventListener('click', (event) => {
+      document.querySelector(`#proposedRoom`).value = event.target.id
+      document.querySelector(`#proposedHost`).click()
+    })
   }
 })

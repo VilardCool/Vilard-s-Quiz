@@ -54,11 +54,17 @@ document.querySelector('#host').addEventListener('click', (event) => {
 socket.on('proposedRoomArray', (files) => {
   hostMenu = document.querySelector('#hostMenu')
   for (file in files) {
-    //hostMenu.textContent += files[file].split('.')[0]
-    hostMenu.innerHTML += `<button id="${files[file].split('.')[0]}" class="confirmButton true">${files[file].split('.')[0]}</button>`
-    document.querySelector(`#${files[file].split('.')[0]}`).addEventListener('click', (event) => {
-      document.querySelector(`#proposedRoom`).value = event.target.id
-      document.querySelector(`#proposedHost`).click()
-    })
+    hostMenu.innerHTML += `<button id="${files[file]}" class="confirmButton true">${files[file]}</button>`
   }
+  hostMenu.addEventListener('click', (event) => {
+      if (files.includes(event.target.id)){
+        document.querySelector(`#proposedRoom`).value = event.target.id
+        document.querySelector(`#proposedHost`).click()
+      }
+    })
+  hostMenu.innerHTML += `<form action="/room" method="post" enctype="multipart/form-data">
+            <input id="room" name="room" type="text" class="form" placeholder="Room name" required>
+            <input id="pack" name="pack" type="file" style="width: 100%;" required>
+            <button id="host" type="submit" class="confirmButton true">Host</button>
+          </form>`
 })

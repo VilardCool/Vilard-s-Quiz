@@ -85,7 +85,11 @@ io.on('connection', (socket) => {
   socket.on('requestProposedRoom', () => {
     fs.readdir(packDir, (err, files) => {
       if (err) throw err;
-      socket.emit('proposedRoomArray', files)
+      filesName = files.map(item => {
+        const regex = new RegExp('.json', 'g');
+        return item.replace(regex, '');
+      });
+      socket.emit('proposedRoomArray', filesName)
     })
   })
 

@@ -171,6 +171,11 @@
   }
 }
 
+.hostMenu {
+  display: flex;
+  flex-direction: column;
+}
+
 .container > div {
   margin: 10px; 
 }

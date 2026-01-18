@@ -254,11 +254,8 @@ io.on('connection', (socket) => {
   })
 
   socket.on('skipQuestion', ({room}) => {
-    rooms[room].width = 100
-    io.to(rooms[room].judge).emit('showQuestions', ({player: rooms[room].turn, question: rooms[room].currentQuestion}))
-    for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
-      io.to(player).emit('showQuestions', ({player: rooms[room].turn, question: rooms[room].currentQuestion}))
-    }
+    if (rooms[room].currentQuestion)
+      sendAnswer(room, rooms[room].turn, rooms[room].currentQuestion)
   })
 
   socket.on('playerQuestion', ({room, question, nextPlayer}) => {
@@ -330,7 +327,7 @@ io.on('connection', (socket) => {
     io.to(rooms[room].judge).emit('questionDisplay', {question: question, widthS: rooms[room].width})
     for (const play in rooms[room].players) {
       io.to(play).emit('updatePlayers', rooms[room].players)
-      io.to(player).emit('questionDisplay', {question: question, widthS: rooms[room].width})
+      io.to(play).emit('questionDisplay', {question: question, widthS: rooms[room].width})
     }
   })
 

@@ -219,6 +219,12 @@ socket.on('provideAnswer', ({player, question}) => {
   answerField = document.querySelector('#answerField')
   answerField.innerHTML = ""
 
+  answerField.innerHTML = `<button id="takeQuestion"><div id="myProgress">
+    <div id="myBar"></div>
+  </div></button>`
+
+  interval = setInterval(frame, 100);
+
   if(player == socket.id){
     alreadyAnswer = true
     

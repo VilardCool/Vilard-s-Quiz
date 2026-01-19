@@ -312,6 +312,8 @@ io.on('connection', (socket) => {
     quest = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
     score = rooms[room].players[player].score
 
+    rooms[room].players[player].score = Math.max(0, score - 50)
+
     if (quest.bonus == "punishment") rooms[room].players[player].score = Math.max(0, score - Number(quest.cost))
     /*
     var players = Object.keys(rooms[backEndPlayers[idPlayers[socket.id]].room].players)

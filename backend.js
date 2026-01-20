@@ -26,11 +26,14 @@ app.post("/room", upload.single('pack'), (req, res) => {
     return res.redirect('/')
   }
 
+  judge = null
+  if (req.body.autojudge) judge = "Autojudge"
+
   const jsonContent = JSON.parse(req.file.buffer.toString('utf8'))
 
   rooms[req.body.room] = {
     name: req.body.room,
-    judge: null,
+    judge: judge,
     players: {},
     pack: jsonContent,
     turn: null,
@@ -48,11 +51,14 @@ app.post("/proposedRoom", (req, res) => {
     return res.redirect('/')
   }
 
+  judge = null
+  if (req.body.proposedAutojudge) judge = "Autojudge"
+
   const jsonContent = require(`./public/packs/${req.body.proposedRoom}.json`);
 
   rooms[req.body.proposedRoom] = {
     name: req.body.proposedRoom,
-    judge: null,
+    judge: judge,
     players: {},
     pack: jsonContent,
     turn: null,

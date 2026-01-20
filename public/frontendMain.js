@@ -55,18 +55,28 @@ socket.on('proposedRoomArray', (files) => {
   hostMenuRooms = document.querySelector('#hostMenuRooms')
   hostMenuHost = document.querySelector('#hostMenuHost')
   hostMenuHost.style = "margin-top: 100px;"
+
   for (file in files) {
     hostMenuRooms.innerHTML += `<button id="${files[file]}" class="confirmButton true" style="height: 300px;">${files[file]}</button>`
   }
+
   hostMenuRooms.addEventListener('click', (event) => {
-      if (files.includes(event.target.id)){
-        document.querySelector(`#proposedRoom`).value = event.target.id
-        document.querySelector(`#proposedHost`).click()
-      }
-    })
-  hostMenuHost.innerHTML += `<form action="/room" method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <input id="room" name="room" type="text" class="form" placeholder="Room name" required>
-            <input id="pack" name="pack" type="file" style="width: 100%;" required>
-            <button id="host" type="submit" class="confirmButton true">Host</button>
-          </form>`
+    if (files.includes(event.target.id)){
+      document.querySelector(`#proposedRoom`).value = event.target.id
+      document.querySelector(`#proposedHost`).click()
+    }
+  })
+
+  hostMenuHost.innerHTML += `<div>Autojudje:</div> <input type="checkbox" id="auto">
+    <form action="/room" method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+      <input id="autojudge" type="checkbox" style="display: none;">
+      <input id="room" name="room" type="text" class="form" placeholder="Room name" required>
+      <input id="pack" name="pack" type="file" style="width: 100%;" required>
+      <button id="host" type="submit" class="confirmButton true">Host</button>
+    </form>`
+
+  document.querySelector('#auto').addEventListener('click', (event) => {
+    document.querySelector('#autojudge').checked = document.querySelector('#auto').checked
+    document.querySelector('#proposedAutojudge').checked = document.querySelector('#auto').checked
+  })
 })

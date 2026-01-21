@@ -283,12 +283,19 @@ io.on('connection', (socket) => {
     if (questionInfo.type == "test") correctAnswer = questionInfo.answer[questionInfo.answer[4]-1]
     else correctAnswer = questionInfo.answer
 
-    io.to(rooms[room].judge).emit('checkAnswer', {
-      player: socket.id,
-      question: question,
-      correctAnswer: correctAnswer,
-      answer: answer
-    })
+    if (rooms[room].judge == "Autojudge"){
+      if (answer == correctAnswer)
+        correctAnswer(room, player, question)
+      else
+        incorrectAnswer(room, player, question)
+    } else
+      io.to(rooms[room].judge).emit('checkAnswer', {
+        player: socket.id,
+        question: question,
+        correctAnswer: correctAnswer,
+        answer: answer
+      })
+    
     for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(player).emit('showAnswer', {
         player: socket.id,
@@ -297,6 +304,14 @@ io.on('connection', (socket) => {
   })
 
   socket.on('correctAnswer', ({room, player, question}) => {
+    correctAnswer(room, player, question)
+  })
+
+  socket.on('incorrectAnswer', ({room, player, question}) => {
+    incorrectAnswer(room, player, question)
+  })
+
+  function correctAnswer (room, player, question) {
     quest = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
 
     switch (quest.bonus){
@@ -312,24 +327,15 @@ io.on('connection', (socket) => {
     }
 
     sendAnswer(room, player, question)
-  })
+  }
 
-  socket.on('incorrectAnswer', ({room, player, question}) => {
+  function incorrectAnswer (room, player, question) {
     quest = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
     score = rooms[room].players[player].score
 
     rooms[room].players[player].score = Math.max(0, score - 50)
 
     if (quest.bonus == "punishment") rooms[room].players[player].score = Math.max(0, score - Number(quest.cost))
-    /*
-    var players = Object.keys(rooms[backEndPlayers[idPlayers[socket.id]].room].players)
-    var nextPlayer = player
-    if (players.length > 1) {
-      players.splice(players.indexOf(player), 1)
-      nextPlayer = players[Math.floor(Math.random() * players.length)]
-      rooms[room].turn = nextPlayer
-    }
-    */
 
     io.to(rooms[room].judge).emit('updatePlayers', rooms[backEndPlayers[idPlayers[socket.id]].room].players)
     io.to(rooms[room].judge).emit('questionDisplay', {question: question, widthS: rooms[room].width})
@@ -337,7 +343,7 @@ io.on('connection', (socket) => {
       io.to(play).emit('updatePlayers', rooms[room].players)
       io.to(play).emit('questionDisplay', {question: question, widthS: rooms[room].width})
     }
-  })
+  }
 
   function sendAnswer (room, player, question){
     rooms[room].width = 100

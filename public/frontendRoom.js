@@ -105,13 +105,13 @@ socket.on('updatePlayers', (backEndPlayers) => {
   }
 })
 
-socket.on('judgeChange', (judge) => {
-  judgeG = judge
+socket.on('judgeChange', ({judgeName, judgePicture}) => {
   var text
   announcement = document.querySelector('#announcement')
   field = document.querySelector('#questionField')
   waitForJudge = document.querySelector('#waitForJudge')
-  if (!judge) {
+  console.log(judgeName)
+  if (!judgeName) {
     text = "vacant"
     announcement.style.display = "none"
     field.style.display = "none"
@@ -119,15 +119,15 @@ socket.on('judgeChange', (judge) => {
     judgePresent = false
   }
   else {
-    text = judge.name
+    text = judgeName
     announcement.style.display = ""
     //field.style.display = ""
     waitForJudge.style.display = "none"
     judgePresent = true
   }
   picture = "/img/Waiting.png"
-  if (judge) {
-    if (judge.picture) picture = judge.picture
+  if (judgeName) {
+    if (judgePicture) picture = judgePicture
     else picture = "/img/profilePicture.png"
   }
   document.querySelector('#judgeLabel').innerHTML = `<img class="profilePicture" src="${picture}">

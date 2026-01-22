@@ -162,13 +162,21 @@ io.on('connection', (socket) => {
       rooms[room].turn = socket.id
     }
 
+    judgeName = "Autojudge"
+    judgePicture = null
+
+    if (rooms[room].judge != "Autojudge") {
+      judgeName = backEndPlayers[idPlayers[rooms[room].judge]].name
+      judgePicture = backEndPlayers[idPlayers[rooms[room].judge]].picture
+    }
+
     io.emit('updateRooms', rooms)
-    io.to(rooms[room].judge).emit('judgeChange', backEndPlayers[idPlayers[rooms[room].judge]])
+    io.to(rooms[room].judge).emit('judgeChange', {judgeName: judgeName, judgePicture: judgePicture})
     io.to(rooms[room].judge).emit('updatePlayers', rooms[room].players)
     io.to(rooms[room].judge).emit('judgeControl')
     if (rooms[room].turn) io.to(rooms[room].judge).emit('updateTurn', rooms[room].turn)
     for (const player in rooms[room].players) {
-      io.to(player).emit('judgeChange', backEndPlayers[idPlayers[rooms[room].judge]])
+      io.to(player).emit('judgeChange', {judgeName: judgeName, judgePicture: judgePicture})
       io.to(player).emit('updatePlayers', rooms[room].players)
       if (rooms[room].turn) io.to(player).emit('updateTurn', rooms[room].turn)
     }
@@ -285,9 +293,9 @@ io.on('connection', (socket) => {
 
     if (rooms[room].judge == "Autojudge"){
       if (answer == correctAnswer)
-        correctAnswer(room, player, question)
+        correctAnswer(room, socket.id, question)
       else
-        incorrectAnswer(room, player, question)
+        incorrectAnswer(room, socket.id, question)
     } else
       io.to(rooms[room].judge).emit('checkAnswer', {
         player: socket.id,

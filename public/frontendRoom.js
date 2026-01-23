@@ -110,7 +110,6 @@ socket.on('judgeChange', ({judgeName, judgePicture}) => {
   announcement = document.querySelector('#announcement')
   field = document.querySelector('#questionField')
   waitForJudge = document.querySelector('#waitForJudge')
-  console.log(judgeName)
   if (!judgeName) {
     text = "vacant"
     announcement.style.display = "none"

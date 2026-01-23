@@ -288,11 +288,11 @@ io.on('connection', (socket) => {
 
   socket.on('playerAnswer', ({room, question, answer}) => {
     questionInfo = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
-    if (questionInfo.type == "test") correctAnswer = questionInfo.answer[questionInfo.answer[4]-1]
-    else correctAnswer = questionInfo.answer
+    if (questionInfo.type == "test") correctAns = questionInfo.answer[questionInfo.answer[4]-1]
+    else correctAns = questionInfo.answer
 
     if (rooms[room].judge == "Autojudge"){
-      if (answer == correctAnswer)
+      if (answer == correctAns)
         correctAnswer(room, socket.id, question)
       else
         incorrectAnswer(room, socket.id, question)
@@ -300,7 +300,7 @@ io.on('connection', (socket) => {
       io.to(rooms[room].judge).emit('checkAnswer', {
         player: socket.id,
         question: question,
-        correctAnswer: correctAnswer,
+        correctAnswer: correctAns,
         answer: answer
       })
     
@@ -344,9 +344,11 @@ io.on('connection', (socket) => {
     rooms[room].players[player].score = Math.max(0, score - 50)
 
     if (quest.bonus == "punishment") rooms[room].players[player].score = Math.max(0, score - Number(quest.cost))
-
-    io.to(rooms[room].judge).emit('updatePlayers', rooms[backEndPlayers[idPlayers[socket.id]].room].players)
-    io.to(rooms[room].judge).emit('questionDisplay', {question: question, widthS: rooms[room].width})
+    
+    if (rooms[room].judge != "Autojudge"){
+      io.to(rooms[room].judge).emit('updatePlayers', rooms[backEndPlayers[idPlayers[socket.id]].room].players)
+      io.to(rooms[room].judge).emit('questionDisplay', {question: question, widthS: rooms[room].width})
+    }
     for (const play in rooms[room].players) {
       io.to(play).emit('updatePlayers', rooms[room].players)
       io.to(play).emit('questionDisplay', {question: question, widthS: rooms[room].width})
@@ -379,10 +381,12 @@ io.on('connection', (socket) => {
       else lastRound = 1
     }
 
-    io.to(rooms[room].judge).emit('updatePlayers', rooms[backEndPlayers[idPlayers[socket.id]].room].players)
-    io.to(rooms[room].judge).emit('showQuestions', ({player: player, question: question}))
-    io.to(rooms[room].judge).emit('updateTurn', (player))
-    if (lastRound) io.to(rooms[room].judge).emit('gameFinished')
+    if (rooms[room].judge != "Autojudge"){
+      io.to(rooms[room].judge).emit('updatePlayers', rooms[backEndPlayers[idPlayers[socket.id]].room].players)
+      io.to(rooms[room].judge).emit('showQuestions', ({player: player, question: question}))
+      io.to(rooms[room].judge).emit('updateTurn', (player))
+      if (lastRound) io.to(rooms[room].judge).emit('gameFinished')
+    }
     for (const play in rooms[room].players) {
       io.to(play).emit('updatePlayers', rooms[room].players)
       io.to(play).emit('showQuestions', ({player: player, question: question}))

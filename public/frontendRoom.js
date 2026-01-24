@@ -58,10 +58,8 @@ socket.on('alreadyInRoom', () => {
 
 socket.on('updateTurn', (player) => {
   turn = player
-  if (!document.querySelector('#questionField').innerHTML){
-    announcement = document.querySelector('#announcement')
-    announcement.textContent = `Turn: ${frontEndPlayers[player].name}`
-  }
+  announcement = document.querySelector('#announcement')
+  announcement.textContent = `Turn: ${frontEndPlayers[player].name}`
 })
 
 socket.on('updatePlayers', (backEndPlayers) => {
@@ -222,6 +220,7 @@ socket.on('provideAnswer', ({player, question}) => {
     <div id="myBar"></div>
   </div></button>`
 
+  width = 100
   interval = setInterval(frame, 100);
 
   if(player == socket.id){
@@ -330,14 +329,21 @@ socket.on('provideAnswer', ({player, question}) => {
   }
 })
 
-socket.on('showAnswer', ({player, answer}) => {
+socket.on('showAnswer', ({player, answer, judge}) => {
+  clearInterval(interval);
+  
   field = document.querySelector('#questionField')
   field.innerHTML += `<div>Answer: ${answer}</div>`
-  announcement = document.querySelector('#announcement')
-  announcement.textContent = `Waiting for points for: ${frontEndPlayers[player].name}`
+  if(!judge){
+    announcement = document.querySelector('#announcement')
+    announcement.textContent = `Waiting for points for: ${frontEndPlayers[player].name}`
+  }
 })
 
 socket.on('checkAnswer', ({player, question, correctAnswer, answer}) => {
+  clearInterval(interval);
+  answerField.innerHTML = ""
+
   field = document.querySelector('#questionField')
   field.innerHTML += `<div>Answer: ${answer}</div><div>Correct answer: ${correctAnswer}</div>`
   announcement = document.querySelector('#announcement')

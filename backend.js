@@ -307,7 +307,9 @@ io.on('connection', (socket) => {
     for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(player).emit('showAnswer', {
         player: socket.id,
-        answer: answer})
+        answer: answer,
+        judge: rooms[room].judge == "Autojudge"
+      })
     }
   })
 

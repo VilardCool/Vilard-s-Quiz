@@ -54,7 +54,9 @@ document.querySelector('#host').addEventListener('click', (event) => {
 socket.on('proposedRoomArray', (files) => {
   hostMenuRooms = document.querySelector('#hostMenuRooms')
   hostMenuHost = document.querySelector('#hostMenuHost')
-  hostMenuHost.style = "margin-top: 100px;"
+  hostMenuSettings = document.querySelector('#hostMenuSettings')
+  hostMenuHost.style = "margin-top: 75px;"
+  hostMenuSettings.style = "margin-top: 75px;"
 
   for (file in files) {
     hostMenuRooms.innerHTML += `<button id="${files[file]}" class="confirmButton true" style="height: 300px;">${files[file]}</button>`
@@ -67,8 +69,9 @@ socket.on('proposedRoomArray', (files) => {
     }
   })
 
-  hostMenuHost.innerHTML += `<div>Autojudje:</div> <input type="checkbox" id="auto">
-    <form action="/room" method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+  hostMenuSettings.innerHTML += `<div style="display: inline;">Autojudje:</div> <input type="checkbox" id="auto">`
+
+  hostMenuHost.innerHTML += `<form action="/room" method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
       <input id="autojudge" type="checkbox" style="display: none;">
       <input id="room" name="room" type="text" class="form" placeholder="Room name" required>
       <input id="pack" name="pack" type="file" style="width: 100%;" required>

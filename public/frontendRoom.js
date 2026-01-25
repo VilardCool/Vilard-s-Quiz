@@ -329,8 +329,11 @@ socket.on('provideAnswer', ({player, question}) => {
   }
 })
 
-socket.on('showAnswer', ({player, answer, judge}) => {
+socket.on('showAnswer', ({player, answer, judge, widthS}) => {
   clearInterval(interval);
+
+  width = widthS
+  interval = setInterval(frame, 50);
   
   field = document.querySelector('#questionField')
   field.innerHTML += `<div>Answer: ${answer}</div>`

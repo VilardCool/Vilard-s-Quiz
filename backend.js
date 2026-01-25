@@ -240,7 +240,8 @@ io.on('connection', (socket) => {
           }
         }
 
-        if (Object.keys(rooms[backEndPlayers[idPlayers[socket.id]].room].players).length == 0 && !rooms[backEndPlayers[idPlayers[socket.id]].room].judge){
+        if (Object.keys(rooms[backEndPlayers[idPlayers[socket.id]].room].players).length == 0 &&
+        (!rooms[backEndPlayers[idPlayers[socket.id]].room].judge || rooms[backEndPlayers[idPlayers[socket.id]].room].judge == "Autojudge")){
           delete rooms[backEndPlayers[idPlayers[socket.id]].room]
         }
       }
@@ -308,7 +309,8 @@ io.on('connection', (socket) => {
       io.to(player).emit('showAnswer', {
         player: socket.id,
         answer: answer,
-        judge: rooms[room].judge == "Autojudge"
+        judge: rooms[room].judge == "Autojudge",
+        widthS: rooms[room].width
       })
     }
   })

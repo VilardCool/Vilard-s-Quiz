@@ -57,7 +57,10 @@ socket.on('alreadyInRoom', () => {
 })
 
 socket.on('updateTurn', (player) => {
-  turn = player
+  for (const id in frontEndPlayers) {
+    document.querySelector(`#player_${id}`).style = "background-color: rgba(127, 0, 255, 0.3);"
+  }
+  document.querySelector(`#player_${player}`).style = "background-color: rgba(0, 255, 127, 0.3);"
   announcement = document.querySelector('#announcement')
   announcement.textContent = `Turn: ${frontEndPlayers[player].name}`
 })
@@ -80,14 +83,14 @@ socket.on('updatePlayers', (backEndPlayers) => {
       if (window.getComputedStyle(document.querySelector('.playersPlace2')).display != "none" && 
         Object.keys(frontEndPlayers).length % 2 == 0) playerLabels = document.querySelector('#playerLabels2')
 
-      playerLabels.innerHTML += `<div data-id="player_${id}">
+      playerLabels.innerHTML += `<div id="player_${id}" style="background-color: rgba(127, 0, 255, 0.3);">
                       <img class="profilePicture" src="${picture}">
                       <div>${backEndPlayer.name}: ${backEndPlayer.score}</div>
                     </div>`
     } else {
       frontEndPlayers[id].name = backEndPlayer.name
       frontEndPlayers[id].score = backEndPlayer.score
-      document.querySelector(`div[data-id="player_${id}"]`).innerHTML = `<div data-id="player_${id}">
+      document.querySelector(`#player_${id}`).innerHTML = `<div id="player_${id}">
                       <img class="profilePicture" src="${picture}">
                       <div>${backEndPlayer.name}: ${backEndPlayer.score}</div>
                     </div>`
@@ -96,7 +99,7 @@ socket.on('updatePlayers', (backEndPlayers) => {
 
   for (const id in frontEndPlayers) {
     if (!backEndPlayers[id]) {
-      const divToDelete = document.querySelector(`div[data-id="player_${id}"]`)
+      const divToDelete = document.querySelector(`#player_${id}`)
       divToDelete.parentNode.removeChild(divToDelete)
       delete frontEndPlayers[id]
     }

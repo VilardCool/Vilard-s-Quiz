@@ -57,10 +57,11 @@ socket.on('alreadyInRoom', () => {
 })
 
 socket.on('updateTurn', (player) => {
+  turn = player
   for (const id in frontEndPlayers) {
     document.querySelector(`#player_${id}`).style = "background-color: rgba(127, 0, 255, 0.3);"
   }
-  document.querySelector(`#player_${player}`).style = "background-color: rgba(0, 255, 127, 0.3);"
+  document.querySelector(`#player_${player}`).style = "background-color: rgba(0, 255, 0, 0.3);"
   announcement = document.querySelector('#announcement')
   announcement.textContent = `Turn: ${frontEndPlayers[player].name}`
 })
@@ -189,9 +190,13 @@ socket.on('questionDisplay', ({question, widthS}) => {
 })
 
 function frame() {
-  var elem = document.getElementById("myBar");
+  var elem = document.getElementById("myBar")
+  if (!elem) {
+    clearInterval(interval)
+    return
+  }
   if (width <= 0) {
-    clearInterval(interval);
+    clearInterval(interval)
     socket.emit('skipQuestion',  {
       room: roomName
     })

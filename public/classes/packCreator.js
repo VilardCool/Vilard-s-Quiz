@@ -22,6 +22,18 @@ document.querySelector('#menuButton').addEventListener('click', (
   }
 )
 
+document.querySelector('#import').addEventListener('click', (
+  event) => {
+    importPack = document.querySelector('#importPack')
+    importPack.click()
+
+    importPack.addEventListener("change", () => {
+      importedPack = importPack.files[0]
+      console.log(importedPack[importedPack.name])
+    });
+  }
+)
+
 document.querySelector('#addRound').addEventListener('click', (
   event) => {
     newRound = document.createElement('div');

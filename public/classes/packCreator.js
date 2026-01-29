@@ -22,14 +22,24 @@ document.querySelector('#menuButton').addEventListener('click', (
   }
 )
 
+async function parseJsonFile(file) {
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader()
+    fileReader.onload = event => resolve(JSON.parse(event.target.result))
+    fileReader.onerror = error => reject(error)
+    fileReader.readAsText(file)
+  })
+}
+
 document.querySelector('#import').addEventListener('click', (
   event) => {
     importPack = document.querySelector('#importPack')
     importPack.click()
 
-    importPack.addEventListener("change", () => {
-      importedPack = importPack.files[0]
-      console.log(importedPack[importedPack.name])
+    importPack.addEventListener("change", async (event) => {
+      importedPack = await parseJsonFile(event.target.files[0])
+
+      console.log(importedPack)
     });
   }
 )

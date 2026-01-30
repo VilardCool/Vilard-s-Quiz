@@ -31,15 +31,43 @@ async function parseJsonFile(file) {
   })
 }
 
-document.querySelector('#import').addEventListener('click', (
-  event) => {
+document.querySelector('#import').addEventListener('click', () => {
     importPack = document.querySelector('#importPack')
     importPack.click()
 
     importPack.addEventListener("change", async (event) => {
       importedPack = await parseJsonFile(event.target.files[0])
 
-      console.log(importedPack)
+      for (round in importedPack[Object.keys(importedPack)[0]].rounds) {
+        newRound = document.createElement('div');
+        addRound = document.querySelector('#addRound')
+        create = addRound.parentElement
+        create.insertBefore(newRound, addRound)
+
+        numRound = Object.keys(importedPack[Object.keys(importedPack)[0]].rounds).length
+
+        importedPack[Object.keys(importedPack)[0]].rounds[`round_${numRound}`] = {questions: {}}
+
+        newRound.setAttribute("style", "margin-left: 5%")
+        newRound.setAttribute("name", `round_${numRound}`)
+        newRound.innerHTML = `<h3 style="display: inline-block;">Round name:</h3>
+        <input id="round_${numRound}" name="round_${numRound}" type="text" placeholder="round_${numRound}">
+        <button id="addQuestion_${numRound}" style="display: block;">Add question</button>`
+        document.querySelector(`#round_${numRound}`).addEventListener('change', (
+          event) => {
+            roundName = document.querySelector(`#${event.target.id}`)
+            oldName = roundName.name
+            newName = roundName.value
+            roundName.name = newName
+
+            roundName.parentElement.setAttribute("name", `${newName}`)
+
+            valueToReplace = importedPack[Object.keys(importedPack)[0]].rounds[oldName]
+            importedPack[Object.keys(importedPack)[0]].rounds[newName] = valueToReplace
+            delete importedPack[Object.keys(importedPack)[0]].rounds[oldName]
+          }
+        )
+      }
     });
   }
 )

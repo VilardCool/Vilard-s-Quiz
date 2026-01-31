@@ -67,6 +67,62 @@ document.querySelector('#import').addEventListener('click', () => {
             delete importedPack[Object.keys(importedPack)[0]].rounds[oldName]
           }
         )
+
+        for (quest in importedPack[Object.keys(importedPack)[0]].rounds[round].question){
+          newQuestion = document.createElement('div');
+          addQuestion = event.target
+          round = addQuestion.parentElement
+          round.insertBefore(newQuestion, addQuestion)
+
+          info = event.target.id.split('_')
+          numRound = info[1]
+          numQuestion = Object.keys(pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions).length
+
+          pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[`question_${numRound}_${numQuestion}`] = {
+              cost: 0,
+              data: "text",
+              type: "simple",
+              bonus: "none",
+              content: "",
+              question: "",
+              answer: "",
+              passed: 0
+          }
+
+          newQuestion.setAttribute("style", "margin-left: 5%; margin-top: 1%; background: rgba(0,0,0, 0.2); width: 60%")
+          newQuestion.setAttribute("name", `question_${numRound}_${numQuestion}`)
+          newQuestion.innerHTML = `<p style="display: inline-block;">Cost:</p>
+          <input id="cost_${numRound}_${numQuestion}" type="number" inputmode="numeric" min="0" max="10000" placeholder="0">
+          <p style="display: inline-block; margin-left: 2%;">Data:</p>
+          <select id="data_${numRound}_${numQuestion}">
+            <option value="text">Text</option>
+            <option value="image">Image</option>
+          </select>
+          <p style="display: inline-block; margin-left: 2%;">Type:</p>
+          <select id="type_${numRound}_${numQuestion}">
+            <option value="simple">Simple</option>
+            <option value="test">Test</option>
+            <option value="true">True | False</option>
+          </select>
+          <p style="display: inline-block; margin-left: 2%;">Bonus:</p>
+          <select id="bonus_${numRound}_${numQuestion}">
+            <option value="none">None</option>
+            <option value="choose">Choose player</option>
+            <option value="double">Double reward</option>
+            <option value="punishment">Punishment</option>
+          </select>
+          <div id="contentField_${numRound}_${numQuestion}">
+            <div id="content_${numRound}_${numQuestion}"></div>
+            <p style="display: inline-block; vertical-align: top;">Question:</p>
+            <textarea style="field-sizing: content; overflow-y: hidden; resize: none; width: 70%; margin-top: 2%;" id="question_${numRound}_${numQuestion}"></textarea>
+          </div>
+          <div id="answerField_${numRound}_${numQuestion}">
+            <p style="display: inline-block;">Answer:</p>
+            <div style="display: inline-block;" id="answer_type_${numRound}_${numQuestion}">
+              <input id="answer_${numRound}_${numQuestion}" type="text">
+            </div>
+          </div>`
+        }
       }
     });
   }

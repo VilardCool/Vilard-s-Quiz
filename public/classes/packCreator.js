@@ -122,6 +122,48 @@ document.querySelector('#import').addEventListener('click', () => {
               <input id="answer_${numRound}_${numQuestion}" type="text">
             </div>
           </div>`
+
+          document.querySelector(`#cost_${numRound}_${numQuestion}`).addEventListener('change', (
+            event) => {
+              change = document.querySelector(`#${event.target.id}`)
+              question = change.parentElement
+              round = question.parentElement
+              pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].cost = change.value
+            }
+          )
+          
+          document.querySelector(`#data_${numRound}_${numQuestion}`).addEventListener('change', (
+            event) => {
+              change = document.querySelector(`#${event.target.id}`)
+              question = change.parentElement
+              round = question.parentElement
+              pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].data = change.value
+
+              info = event.target.id.split('_')
+              numRound = info[1]
+              numQuestion = info[2]
+
+              content = document.querySelector(`#content_${numRound}_${numQuestion}`)
+              switch(change.value){
+                case "text":
+                  content.innerHTML = ""
+                  break
+                case "image":
+                  content.innerHTML = `<div style="border: 1px solid #1d86dbff; 
+                      border-radius: 4px; cursor: pointer; max-width: 100%;" id="image_${numRound}_${numQuestion}">
+                    <p style="position: relative; z-index: -1" id="imageText_${numRound}_${numQuestion}">Drag and drop images here, or click to select files.</p>
+                    <input type="file" style="position: relative; z-index: -1" id="file-input_${numRound}_${numQuestion}" accept="image/*" hidden>
+                    <img id="img_${numRound}_${numQuestion}" style="position: relative; z-index: -1; max-width: 100%;">
+                  </div>`
+                  
+                  const dropZone = document.getElementById(`image_${numRound}_${numQuestion}`)
+
+                  setDropZone(dropZone, numRound, numQuestion)
+
+                  break
+              }
+            }
+          )
         }
       }
     });

@@ -51,7 +51,7 @@ document.querySelector('#import').addEventListener('click', () => {
         newRound.setAttribute("style", "margin-left: 5%")
         newRound.setAttribute("name", `round_${numRound}`)
         newRound.innerHTML = `<h3 style="display: inline-block;">Round name:</h3>
-        <input id="round_${numRound}" name="round_${numRound}" type="text" placeholder="round_${numRound}">
+        <input id="round_${numRound}" name="round_${numRound}" type="text" value="${round}">
         <button id="addQuestion_${numRound}" style="display: block;">Add question</button>`
         document.querySelector(`#round_${numRound}`).addEventListener('change', (
           event) => {
@@ -68,26 +68,16 @@ document.querySelector('#import').addEventListener('click', () => {
           }
         )
 
-        for (quest in importedPack[Object.keys(importedPack)[0]].rounds[round].question){
+        for (quest in importedPack[Object.keys(importedPack)[0]].rounds[round].questions){
+          console.log(quest)
           newQuestion = document.createElement('div');
           addQuestion = event.target
           round = addQuestion.parentElement
           round.insertBefore(newQuestion, addQuestion)
 
-          info = event.target.id.split('_')
+          info = quest.split('_')
           numRound = info[1]
-          numQuestion = Object.keys(pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions).length
-
-          pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[`question_${numRound}_${numQuestion}`] = {
-              cost: 0,
-              data: "text",
-              type: "simple",
-              bonus: "none",
-              content: "",
-              question: "",
-              answer: "",
-              passed: 0
-          }
+          numQuestion = info[2]
 
           newQuestion.setAttribute("style", "margin-left: 5%; margin-top: 1%; background: rgba(0,0,0, 0.2); width: 60%")
           newQuestion.setAttribute("name", `question_${numRound}_${numQuestion}`)
@@ -128,7 +118,7 @@ document.querySelector('#import').addEventListener('click', () => {
               change = document.querySelector(`#${event.target.id}`)
               question = change.parentElement
               round = question.parentElement
-              pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].cost = change.value
+              importedPack[Object.keys(importedPack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].cost = change.value
             }
           )
           

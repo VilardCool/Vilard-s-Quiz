@@ -68,8 +68,10 @@ document.querySelector('#import').addEventListener('click', () => {
           }
         )
 
-        for (quest in importedPack[Object.keys(importedPack)[0]].rounds[round].questions){
-          console.log(quest)
+        questions = importedPack[Object.keys(importedPack)[0]].rounds[round].questions
+
+        for (quest in questions){
+          question = questions[quest]
           newQuestion = document.createElement('div');
           addQuestion = event.target
           round = addQuestion.parentElement
@@ -82,7 +84,7 @@ document.querySelector('#import').addEventListener('click', () => {
           newQuestion.setAttribute("style", "margin-left: 5%; margin-top: 1%; background: rgba(0,0,0, 0.2); width: 60%")
           newQuestion.setAttribute("name", `question_${numRound}_${numQuestion}`)
           newQuestion.innerHTML = `<p style="display: inline-block;">Cost:</p>
-          <input id="cost_${numRound}_${numQuestion}" type="number" inputmode="numeric" min="0" max="10000" placeholder="0">
+          <input id="cost_${numRound}_${numQuestion}" type="number" inputmode="numeric" min="0" max="10000" value=${question.cost}>
           <p style="display: inline-block; margin-left: 2%;">Data:</p>
           <select id="data_${numRound}_${numQuestion}">
             <option value="text">Text</option>
@@ -112,6 +114,10 @@ document.querySelector('#import').addEventListener('click', () => {
               <input id="answer_${numRound}_${numQuestion}" type="text">
             </div>
           </div>`
+
+          document.querySelector(`#data_${numRound}_${numQuestion}`).value = question.data
+          document.querySelector(`#type_${numRound}_${numQuestion}`).value = question.type
+          document.querySelector(`#bonus_${numRound}_${numQuestion}`).value = question.bonus
 
           document.querySelector(`#cost_${numRound}_${numQuestion}`).addEventListener('change', (
             event) => {

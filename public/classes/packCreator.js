@@ -119,6 +119,26 @@ document.querySelector('#import').addEventListener('click', () => {
           document.querySelector(`#type_${numRound}_${numQuestion}`).value = question.type
           document.querySelector(`#bonus_${numRound}_${numQuestion}`).value = question.bonus
 
+          content = document.querySelector(`#content_${numRound}_${numQuestion}`)
+              switch(change.value){
+                case "text":
+                  content.innerHTML = ""
+                  break
+                case "image":
+                  content.innerHTML = `<div style="border: 1px solid #1d86dbff; 
+                      border-radius: 4px; cursor: pointer; max-width: 100%;" id="image_${numRound}_${numQuestion}">
+                    <p style="position: relative; z-index: -1" id="imageText_${numRound}_${numQuestion}">Drag and drop images here, or click to select files.</p>
+                    <input type="file" style="position: relative; z-index: -1" id="file-input_${numRound}_${numQuestion}" accept="image/*" hidden>
+                    <img id="img_${numRound}_${numQuestion}" style="position: relative; z-index: -1; max-width: 100%;">
+                  </div>`
+                  
+                  const dropZone = document.getElementById(`image_${numRound}_${numQuestion}`)
+
+                  setDropZone(dropZone, numRound, numQuestion)
+
+                  break
+              }
+
           document.querySelector(`#cost_${numRound}_${numQuestion}`).addEventListener('change', (
             event) => {
               change = document.querySelector(`#${event.target.id}`)

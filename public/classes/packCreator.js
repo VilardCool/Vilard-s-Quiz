@@ -81,7 +81,7 @@ document.querySelector('#import').addEventListener('click', () => {
           numRound = info[1]
           numQuestion = info[2]
 
-          newQuestion.setAttribute("style", "margin-left: 5%; margin-top: 1%; background: rgba(0,0,0, 0.2); width: 120%")
+          newQuestion.setAttribute("style", "margin-left: 5%; margin-top: 1%; background: rgba(0,0,0, 0.2);")
           newQuestion.setAttribute("name", `question_${numRound}_${numQuestion}`)
           newQuestion.innerHTML = `<p style="display: inline-block;">Cost:</p>
           <input id="cost_${numRound}_${numQuestion}" type="number" inputmode="numeric" min="0" max="10000" value=${question.cost}>
@@ -120,22 +120,53 @@ document.querySelector('#import').addEventListener('click', () => {
           document.querySelector(`#bonus_${numRound}_${numQuestion}`).value = question.bonus
 
           content = document.querySelector(`#content_${numRound}_${numQuestion}`)
-              switch(question.data){
-                case "text":
-                  content.innerHTML = question.question
-                  break
-                case "image":
-                  content.innerHTML = `<div style="border: 1px solid #1d86dbff; border-radius: 4px; cursor: pointer;" id="image_${numRound}_${numQuestion}">
-                    <input type="file" style="position: relative; z-index: -1" id="file-input_${numRound}_${numQuestion}" accept="image/*" hidden>
-                    <img id="img_${numRound}_${numQuestion}" style="position: relative;" src=${question.content}>
-                  </div>`
+          switch(question.data){
+            case "text":
+              content.innerHTML = question.question
+              break
+            case "image":
+              content.innerHTML = `<div style="display: inline-block; border: 1px solid #1d86dbff; border-radius: 4px; cursor: pointer;" id="image_${numRound}_${numQuestion}">
+                <input type="file" style="position: relative; z-index: -1" id="file-input_${numRound}_${numQuestion}" accept="image/*" hidden>
+                <img id="img_${numRound}_${numQuestion}" style="position: relative;" src=${question.content}>
+              </div>`
                   
-                  const dropZone = document.getElementById(`image_${numRound}_${numQuestion}`)
+              const dropZone = document.getElementById(`image_${numRound}_${numQuestion}`)
 
-                  setDropZone(dropZone, numRound, numQuestion)
+              setDropZone(dropZone, numRound, numQuestion)
 
-                  break
-              }
+              break
+          }
+          
+          content = document.querySelector(`#answer_type_${numRound}_${numQuestion}`)
+          
+          switch(question.type){
+            case "simple":
+              content.innerHTML = `<input id="answer_${numRound}_${numQuestion}" type="text" value=${question.answer}>`
+
+              document.querySelector(`#answer_${numRound}_${numQuestion}`).addEventListener('change', (
+                event) => {
+                  change = document.querySelector(`#${event.target.id}`)
+                  pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = change.value
+                }
+              )
+              break
+            case "test":
+              content.innerHTML = `<input id="answer_${numRound}_${numQuestion}_0" type="text" value=${question.answer[0]}>
+                <input id="answer_${numRound}_${numQuestion}_1" type="text" value=${question.answer[1]}>
+                <input id="answer_${numRound}_${numQuestion}_2" type="text" value=${question.answer[2]}>
+                <input id="answer_${numRound}_${numQuestion}_3" type="text" value=${question.answer[3]}>
+                <p>Correct:</p>
+                <select id="answer_${numRound}_${numQuestion}_4">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                </select>`
+              
+              document.querySelector(`#answer_${numRound}_${numQuestion}_4`).value = question.answer[4]
+
+              break
+          }
 
           document.querySelector(`#cost_${numRound}_${numQuestion}`).addEventListener('change', (
             event) => {
@@ -237,7 +268,7 @@ document.querySelector('#addRound').addEventListener('click', (
             passed: 0
         }
 
-        newQuestion.setAttribute("style", "margin-left: 5%; margin-top: 1%; background: rgba(0,0,0, 0.2); width: 120%")
+        newQuestion.setAttribute("style", "margin-left: 5%; margin-top: 1%; background: rgba(0,0,0, 0.2);")
         newQuestion.setAttribute("name", `question_${numRound}_${numQuestion}`)
         newQuestion.innerHTML = `<p style="display: inline-block;">Cost:</p>
         <input id="cost_${numRound}_${numQuestion}" type="number" inputmode="numeric" min="0" max="10000" placeholder="0">

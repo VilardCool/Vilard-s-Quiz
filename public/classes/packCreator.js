@@ -209,6 +209,95 @@ document.querySelector('#import').addEventListener('click', () => {
               }
             }
           )
+
+          document.querySelector(`#type_${numRound}_${numQuestion}`).addEventListener('change', (event) => {
+            change = document.querySelector(`#${event.target.id}`)
+            question = change.parentElement
+            round = question.parentElement
+            pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].type = change.value
+            
+            info = event.target.id.split('_')
+            numRound = info[1]
+            numQuestion = info[2]
+
+            content = document.querySelector(`#answer_type_${numRound}_${numQuestion}`)
+            switch(change.value){
+              case "simple":
+                content.innerHTML = `<input id="answer_${numRound}_${numQuestion}" type="text">`
+
+                pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = ""
+
+                document.querySelector(`#answer_${numRound}_${numQuestion}`).addEventListener('change', (
+                  event) => {
+                    change = document.querySelector(`#${event.target.id}`)
+                    pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = change.value
+                  }
+                )
+                break
+              case "test":
+                content.innerHTML = `<input id="answer_${numRound}_${numQuestion}_0" type="text">
+                <input id="answer_${numRound}_${numQuestion}_1" type="text">
+                <input id="answer_${numRound}_${numQuestion}_2" type="text">
+                <input id="answer_${numRound}_${numQuestion}_3" type="text">
+                <p>Correct:</p>
+                <select id="answer_${numRound}_${numQuestion}_4">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                </select>`
+
+                pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = {0:"A", 1:"B", 2:"C", 3:"D", 4:1}
+
+                document.querySelector(`#answer_${numRound}_${numQuestion}_0`).addEventListener('change', (
+                  event) => {
+                    change = document.querySelector(`#${event.target.id}`)
+                    pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer[0] = change.value
+                  }
+                )
+                document.querySelector(`#answer_${numRound}_${numQuestion}_1`).addEventListener('change', (
+                  event) => {
+                    change = document.querySelector(`#${event.target.id}`)
+                    pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer[1] = change.value
+                  }
+                )
+                document.querySelector(`#answer_${numRound}_${numQuestion}_2`).addEventListener('change', (
+                  event) => {
+                    change = document.querySelector(`#${event.target.id}`)
+                    pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer[2] = change.value
+                  }
+                )
+                document.querySelector(`#answer_${numRound}_${numQuestion}_3`).addEventListener('change', (
+                  event) => {
+                    change = document.querySelector(`#${event.target.id}`)
+                    pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer[3] = change.value
+                  }
+                )
+                document.querySelector(`#answer_${numRound}_${numQuestion}_4`).addEventListener('change', (
+                  event) => {
+                    change = document.querySelector(`#${event.target.id}`)
+                    pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer[4] = change.value
+                  }
+                )
+                break
+              case "true":
+                content.innerHTML = `<select id="answer_${numRound}_${numQuestion}_t">
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                  </select>`
+
+                  pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = "true"
+                  
+                  document.querySelector(`#answer_${numRound}_${numQuestion}_t`).addEventListener('change', (
+                  event) => {
+                    change = document.querySelector(`#${event.target.id}`)
+                    pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = change.value
+                  }
+                )
+                break
+            }
+          }
+        )
         }
       }
     });

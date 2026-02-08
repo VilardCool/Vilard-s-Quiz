@@ -298,6 +298,15 @@ document.querySelector('#import').addEventListener('click', () => {
             }
           }
         )
+
+        document.querySelector(`#bonus_${numRound}_${numQuestion}`).addEventListener('change', (
+          event) => {
+            change = document.querySelector(`#${event.target.id}`)
+            question = change.parentElement
+            round = question.parentElement
+            pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].bonus = change.value
+          }
+        )
         }
       }
     });

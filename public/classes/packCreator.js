@@ -316,6 +316,15 @@ document.querySelector('#import').addEventListener('click', () => {
             pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].question = change.value
           }
         )
+
+        document.querySelector(`#answer_${numRound}_${numQuestion}`).addEventListener('change', (
+          event) => {
+            change = document.querySelector(`#${event.target.id}`)
+            question = change.parentElement.parentElement.parentElement
+            round = question.parentElement
+            pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = change.value
+          }
+        )
         }
       }
     });

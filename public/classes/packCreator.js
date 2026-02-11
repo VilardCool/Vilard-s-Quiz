@@ -73,8 +73,8 @@ document.querySelector('#import').addEventListener('click', () => {
         for (quest in questions){
           question = questions[quest]
           newQuestion = document.createElement('div');
-          addQuestion = event.target
-          round = addQuestion.parentElement
+          addQuestion = document.querySelector(`#addQuestion_${numRound}`)
+          round = newRound
           round.insertBefore(newQuestion, addQuestion)
 
           info = quest.split('_')

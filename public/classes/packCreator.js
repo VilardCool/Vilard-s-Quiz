@@ -74,8 +74,7 @@ document.querySelector('#import').addEventListener('click', () => {
           question = questions[quest]
           newQuestion = document.createElement('div');
           addQuestion = document.querySelector(`#addQuestion_${numRound}`)
-          round = newRound
-          round.insertBefore(newQuestion, addQuestion)
+          newRound.insertBefore(newQuestion, addQuestion)
 
           info = quest.split('_')
           numRound = info[1]
@@ -314,15 +313,6 @@ document.querySelector('#import').addEventListener('click', () => {
             question = change.parentElement.parentElement
             round = question.parentElement
             pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].question = change.value
-          }
-        )
-
-        document.querySelector(`#answer_${numRound}_${numQuestion}`).addEventListener('change', (
-          event) => {
-            change = document.querySelector(`#${event.target.id}`)
-            question = change.parentElement.parentElement.parentElement
-            round = question.parentElement
-            pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = change.value
           }
         )
         }

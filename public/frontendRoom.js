@@ -19,9 +19,13 @@ var alreadyAnswer = false
 
 var judgeG = false
 
-var interval;
+var interval
 
-var width = 100;
+var width = 100
+
+var timeForQuestion = 50
+
+var timeForAnswer = 250
 
 socket.emit('playerConnect',  {
   room: roomName
@@ -186,7 +190,7 @@ socket.on('questionDisplay', ({question, widthS}) => {
     }
   })
 
-  interval = setInterval(frame, 50);
+  interval = setInterval(frame, timeForQuestion);
 })
 
 function frame() {
@@ -229,7 +233,7 @@ socket.on('provideAnswer', ({player, question}) => {
   </div></button>`
 
   width = 100
-  interval = setInterval(frame, 100);
+  interval = setInterval(frame, timeForAnswer);
 
   if(player == socket.id){
     alreadyAnswer = true
@@ -341,7 +345,7 @@ socket.on('showAnswer', ({player, answer, judge, widthS}) => {
   clearInterval(interval);
 
   width = widthS
-  interval = setInterval(frame, 50);
+  interval = setInterval(frame, timeForQuestion);
   
   field = document.querySelector('#questionField')
   field.innerHTML += `<div>Answer: ${answer}</div>`

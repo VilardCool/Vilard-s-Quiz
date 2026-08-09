@@ -3,6 +3,8 @@
     <title>Vilard's Quiz</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="/img/Logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="/css/style.css">
     <meta name="google-site-verification" content="1zqGdv3nWIg0nSw8gZ4I4RZYgmM40fy1tpX9DZaK5Po" />
   </head>
@@ -51,11 +53,11 @@
       
       <div>
         <h2 style="display: inline-block;">Pack name:</h2>
-        <input id="packName" type="text" placeholder="Name">
-        <button id="addRound" style="display: block;">Add round</button>
+        <input id="packName" type="text" class="form" placeholder="Name" style="width: auto; display: inline-block;">
+        <button id="addRound" class="confirmButton c" style="display: block;">Add round</button>
       </div>
 
-      <button id="download">Download</button>
+      <button id="download" class="confirmButton true">Download</button>
     </div>
   </body>
 <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>

@@ -196,24 +196,25 @@ io.on('connection', (socket) => {
       return
     }
     else {
-      // A truthy `.id` doesn't necessarily mean that connection is still
-      // alive — the server only detects a dead socket after `pingTimeout`
-      // (long delays here are common on Render behind a proxy). Check the
-      // live socket registry directly instead of trusting the stored id:
-      // if that old socket no longer exists, let the new one take over
-      // rather than blocking a legitimate reconnect.
+      // Instead of trying to guess whether the previous connection is
+      // still alive (which depends on how fast a dead socket gets
+      // detected — slow and unreliable behind Render's proxy), just make
+      // the newest connection win: force-close the old one if it's still
+      // registered, and take over immediately. This is also the more
+      // sensible behavior for a real player reconnecting (new tab, page
+      // reload, network blip) rather than blocking them out.
       const previousSocketId = backEndPlayers[uuid].id
-      const previousSocketStillConnected = previousSocketId && io.sockets.sockets.get(previousSocketId)
-
-      if (!previousSocketStillConnected){
-        idPlayers[socket.id] = uuid
-        backEndPlayers[uuid].id = socket.id
-
-        socket.emit('loadProfile', ({name: backEndPlayers[uuid].name,
-          picture: backEndPlayers[uuid].picture
-        }))
+      if (previousSocketId && previousSocketId !== socket.id) {
+        const previousSocket = io.sockets.sockets.get(previousSocketId)
+        if (previousSocket) previousSocket.disconnect(true)
       }
-      else socket.emit('alreadyInRoom')
+
+      idPlayers[socket.id] = uuid
+      backEndPlayers[uuid].id = socket.id
+
+      socket.emit('loadProfile', ({name: backEndPlayers[uuid].name,
+        picture: backEndPlayers[uuid].picture
+      }))
     }
 
     socket.emit('updateRooms', rooms)
@@ -341,13 +342,12 @@ io.on('connection', (socket) => {
     const uuid = idPlayers[socket.id]
 
     if (backEndPlayers[uuid]) {
-      // This disconnect can arrive late (see the 'connected' handler above)
-      // — if a newer socket has already taken over this uuid, this stale
-      // event must not tear down that active session's room/score/id.
-      if (backEndPlayers[uuid].id !== socket.id) {
-        delete idPlayers[socket.id]
-        return
-      }
+      // A newer connection for this uuid may already be active (see the
+      // 'connected' handler above, which force-disconnects a stale old
+      // socket) — this socket's *own* room membership still needs cleaning
+      // up either way, so that part always runs. Only the shared `.id`
+      // field is guarded below, so a late/forced disconnect from an old
+      // socket can't wipe out a newer, already-active session's id.
 
       if (backEndPlayers[idPlayers[socket.id]].room) {
         if (rooms[backEndPlayers[idPlayers[socket.id]].room].turn == socket.id) {
@@ -390,7 +390,12 @@ io.on('connection', (socket) => {
 
       backEndPlayers[idPlayers[socket.id]].score = 0
       backEndPlayers[idPlayers[socket.id]].room = null
-      backEndPlayers[idPlayers[socket.id]].id = null
+      // Only clear `.id` if this disconnecting socket is still the one on
+      // record for this uuid — if a newer connection already took over,
+      // leave it alone so that active session isn't marked as gone.
+      if (backEndPlayers[uuid].id === socket.id) {
+        backEndPlayers[uuid].id = null
+      }
       delete idPlayers[socket.id]
       io.emit('updateRooms', rooms)
     }

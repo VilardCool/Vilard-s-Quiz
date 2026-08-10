@@ -1,4 +1,6 @@
-const fs = require('fs')
+const crypto = require('crypto')
+const db = require('./db')
+require('dotenv').config()
 
 const express = require('express')
 const app = express()
@@ -22,14 +24,23 @@ app.get('/', (req, res) => {
 })
 
 app.post("/room", upload.single('pack'), (req, res) => {
-  if (rooms[req.body.room] != null) { 
+  if (!req.body.room || rooms[req.body.room] != null) { 
     return res.redirect('/')
   }
 
-  judge = null
+  if (!req.file) {
+    return res.redirect('/')
+  }
+
+  let judge = null
   if (req.body.autojudge) judge = "Autojudge"
 
-  const jsonContent = JSON.parse(req.file.buffer.toString('utf8'))
+  let jsonContent
+  try {
+    jsonContent = JSON.parse(req.file.buffer.toString('utf8'))
+  } catch (e) {
+    return res.redirect('/')
+  }
 
   rooms[req.body.room] = {
     name: req.body.room,
@@ -43,21 +54,46 @@ app.post("/room", upload.single('pack'), (req, res) => {
     currentQuestion: null
   }
 
+  // Save the uploaded pack into the reusable pack library, so it shows up
+  // next time via "Host → pick a pack". Non-blocking — a save failure here
+  // shouldn't stop the room from starting.
+  const packName = Object.keys(jsonContent)[0]
+  db.savePack(packName, jsonContent).catch((err) => {
+    console.error('Failed to save uploaded pack to the database:', err.message)
+  })
+
   res.redirect(req.body.room)
 })
 
-app.post("/proposedRoom", (req, res) => {
-  if (rooms[req.body.proposedRoom] != null) { 
+app.post("/proposedRoom", async (req, res) => {
+  const proposedRoom = req.body.proposedRoom
+
+  // Only allow safe names — this doubles as the pack name looked up in the DB.
+  if (!proposedRoom || !/^[a-zA-Z0-9_-]+$/.test(proposedRoom)) {
     return res.redirect('/')
   }
 
-  judge = null
+  if (rooms[proposedRoom] != null) { 
+    return res.redirect('/')
+  }
+
+  let judge = null
   if (req.body.proposedAutojudge) judge = "Autojudge"
 
-  const jsonContent = require(`./public/packs/${req.body.proposedRoom}.json`);
+  let jsonContent
+  try {
+    jsonContent = await db.getPack(proposedRoom)
+  } catch (err) {
+    console.error('Failed to load pack from the database:', err.message)
+    return res.redirect('/')
+  }
 
-  rooms[req.body.proposedRoom] = {
-    name: req.body.proposedRoom,
+  if (!jsonContent) {
+    return res.redirect('/')
+  }
+
+  rooms[proposedRoom] = {
+    name: proposedRoom,
     judge: judge,
     players: {},
     pack: jsonContent,
@@ -68,7 +104,7 @@ app.post("/proposedRoom", (req, res) => {
     currentQuestion: null
   }
 
-  res.redirect(req.body.proposedRoom)
+  res.redirect(proposedRoom)
 })
 
 app.get('/:room', (req, res) => {
@@ -82,21 +118,19 @@ app.get('/:room', (req, res) => {
   })
 })
 
-const packDir = "./public/packs"
-
 const backEndPlayers = {}
 const idPlayers = {}
 
 io.on('connection', (socket) => {
   socket.on('requestProposedRoom', () => {
-    fs.readdir(packDir, (err, files) => {
-      if (err) throw err;
-      filesName = files.map(item => {
-        const regex = new RegExp('.json', 'g');
-        return item.replace(regex, '');
-      });
-      socket.emit('proposedRoomArray', filesName)
-    })
+    db.listPacks()
+      .then((filesName) => {
+        socket.emit('proposedRoomArray', filesName)
+      })
+      .catch((err) => {
+        console.error('Failed to list packs from the database:', err.message)
+        socket.emit('proposedRoomArray', [])
+      })
   })
 
   socket.on('giveUUID', () => {
@@ -105,14 +139,41 @@ io.on('connection', (socket) => {
 
   socket.on('connected', ({uuid}) => {
     if (!backEndPlayers[uuid]){
-      backEndPlayers[uuid] = {
-        name: "User",
-        picture: "",
-        score: 0 ,
-        room: null,
-        id: socket.id
-      }
-      idPlayers[socket.id] = uuid
+      db.getOrCreatePlayer(uuid)
+        .then((profile) => {
+          // A second event for the same uuid could have arrived while we
+          // were waiting on the DB — don't clobber it if so.
+          if (backEndPlayers[uuid]) return
+
+          backEndPlayers[uuid] = {
+            name: profile.name || "User",
+            picture: profile.picture || "",
+            score: 0,
+            room: null,
+            id: socket.id
+          }
+          idPlayers[socket.id] = uuid
+
+          socket.emit('loadProfile', ({name: backEndPlayers[uuid].name,
+            picture: backEndPlayers[uuid].picture
+          }))
+          socket.emit('updateRooms', rooms)
+        })
+        .catch((err) => {
+          console.error('Failed to load player profile from the database:', err.message)
+          // Fall back to an in-memory-only profile so the app still works
+          // even if the database is temporarily unreachable.
+          backEndPlayers[uuid] = {
+            name: "User",
+            picture: "",
+            score: 0,
+            room: null,
+            id: socket.id
+          }
+          idPlayers[socket.id] = uuid
+          socket.emit('updateRooms', rooms)
+        })
+      return
     }
     else {
       if (!backEndPlayers[uuid].id){
@@ -130,15 +191,17 @@ io.on('connection', (socket) => {
   })
 
   socket.on('playerConnect', ({room}) => {
-    game = {}
+    if (!rooms[room]) return
+
+    const game = {}
     game.rounds = {}
-    rounds = Object.keys(Object.values(rooms[room].pack)[0].rounds)
-    gameRounds =  rounds.slice(rounds.indexOf(rooms[room].currentRound))
-    for (round in gameRounds) {
+    const rounds = Object.keys(Object.values(rooms[room].pack)[0].rounds)
+    const gameRounds =  rounds.slice(rounds.indexOf(rooms[room].currentRound))
+    for (const round in gameRounds) {
       if (gameRounds[round] == rooms[room].currentRound) {
         game.rounds[gameRounds[round]] = {}
         game.rounds[gameRounds[round]].questions = {}
-        questions = Object.values(rooms[room].pack)[0].rounds[gameRounds[round]].questions
+        const questions = Object.values(rooms[room].pack)[0].rounds[gameRounds[round]].questions
         for (const question in questions) {
           if (questions[question].passed == 0){
             game.rounds[gameRounds[round]].questions[question] = questions[question]
@@ -162,8 +225,8 @@ io.on('connection', (socket) => {
       rooms[room].turn = socket.id
     }
 
-    judgeName = "Autojudge"
-    judgePicture = null
+    let judgeName = "Autojudge"
+    let judgePicture = null
 
     if (rooms[room].judge != "Autojudge") {
       judgeName = backEndPlayers[idPlayers[rooms[room].judge]].name
@@ -183,15 +246,38 @@ io.on('connection', (socket) => {
   })
 
   socket.on('changeProfilePicture', ({image}) => {
-    backEndPlayers[idPlayers[socket.id]].picture = image
+    const uuid = idPlayers[socket.id]
+    backEndPlayers[uuid].picture = image
+    db.updatePlayerPicture(uuid, image).catch((err) => {
+      console.error('Failed to save profile picture to the database:', err.message)
+    })
   })
 
   socket.on('skipRound', ({room}) => {
-    lastRound = 0
-    rounds = Object.keys(Object.values(rooms[room].pack)[0].rounds)
-    currentCount = rounds.indexOf(rooms[room].currentRound)
+    let lastRound = 0
+    const rounds = Object.keys(Object.values(rooms[room].pack)[0].rounds)
+    const currentCount = rounds.indexOf(rooms[room].currentRound)
     if (rounds.length > currentCount + 1) rooms[room].currentRound = rounds[currentCount + 1]
     else lastRound = 1
+
+    if (lastRound) {
+      let bestPlayerId = null
+      for (const playerId in rooms[room].players) {
+        if (!bestPlayerId || rooms[room].players[playerId].score > rooms[room].players[bestPlayerId].score) {
+          bestPlayerId = playerId
+        }
+      }
+      if (bestPlayerId) {
+        db.logGameResult({
+          roomName: room,
+          packName: Object.keys(rooms[room].pack)[0],
+          winnerName: rooms[room].players[bestPlayerId].name,
+          winnerScore: rooms[room].players[bestPlayerId].score
+        }).catch((err) => {
+          console.error('Failed to log game result to the database:', err.message)
+        })
+      }
+    }
 
     io.to(rooms[room].judge).emit('showQuestionsSkip')
     if (lastRound) io.to(rooms[room].judge).emit('gameFinished')
@@ -202,7 +288,11 @@ io.on('connection', (socket) => {
   })
 
   socket.on('changeProfileName', ({name}) => {
-    backEndPlayers[idPlayers[socket.id]].name = name
+    const uuid = idPlayers[socket.id]
+    backEndPlayers[uuid].name = name
+    db.updatePlayerName(uuid, name).catch((err) => {
+      console.error('Failed to save profile name to the database:', err.message)
+    })
   })
 
   socket.on('disconnect', (reason) => {
@@ -229,7 +319,7 @@ io.on('connection', (socket) => {
         if (rooms[backEndPlayers[idPlayers[socket.id]].room].judge == socket.id) {
           rooms[backEndPlayers[idPlayers[socket.id]].room].judge = null
           for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
-            io.to(player).emit('judgeChange', rooms[backEndPlayers[idPlayers[socket.id]].room].judge)
+            io.to(player).emit('judgeChange', {judgeName: null, judgePicture: null})
           }
         } else
         if (rooms[backEndPlayers[idPlayers[socket.id]].room].players[socket.id] == backEndPlayers[idPlayers[socket.id]]) {
@@ -288,7 +378,8 @@ io.on('connection', (socket) => {
   })
 
   socket.on('playerAnswer', ({room, question, answer}) => {
-    questionInfo = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
+    const questionInfo = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
+    let correctAns
     if (questionInfo.type == "test") correctAns = questionInfo.answer[questionInfo.answer[4]-1]
     else correctAns = questionInfo.answer
 
@@ -324,7 +415,7 @@ io.on('connection', (socket) => {
   })
 
   function correctAnswer (room, player, question) {
-    quest = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
+    const quest = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
 
     switch (quest.bonus){
       case "none":
@@ -342,8 +433,8 @@ io.on('connection', (socket) => {
   }
 
   function incorrectAnswer (room, player, question) {
-    quest = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
-    score = rooms[room].players[player].score
+    const quest = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
+    const score = rooms[room].players[player].score
 
     rooms[room].players[player].score = Math.max(0, score - 50)
 
@@ -362,14 +453,14 @@ io.on('connection', (socket) => {
   function sendAnswer (room, player, question){
     rooms[room].width = 100
 
-    info = question.split('_')
-    round = Object.keys(Object.values(rooms[room].pack)[0].rounds)[info[1]]
+    const info = question.split('_')
+    const round = Object.keys(Object.values(rooms[room].pack)[0].rounds)[info[1]]
     Object.values(rooms[room].pack)[0].rounds[round].questions[question].passed = 1
 
     rooms[room].currentQuestion = null
 
-    continueRound = 0
-    questions = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions
+    let continueRound = 0
+    const questions = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions
     for (const question in questions) {
       if (questions[question].passed == 0) {
         continueRound = 1
@@ -377,12 +468,31 @@ io.on('connection', (socket) => {
       }
     }
 
-    lastRound = 0
+    let lastRound = 0
     if (!continueRound){
-      rounds = Object.keys(Object.values(rooms[room].pack)[0].rounds)
-      currentCount = rounds.indexOf(rooms[room].currentRound)
+      const rounds = Object.keys(Object.values(rooms[room].pack)[0].rounds)
+      const currentCount = rounds.indexOf(rooms[room].currentRound)
       if (rounds.length > currentCount + 1) rooms[room].currentRound = rounds[currentCount + 1]
       else lastRound = 1
+    }
+
+    if (lastRound) {
+      let bestPlayerId = null
+      for (const playerId in rooms[room].players) {
+        if (!bestPlayerId || rooms[room].players[playerId].score > rooms[room].players[bestPlayerId].score) {
+          bestPlayerId = playerId
+        }
+      }
+      if (bestPlayerId) {
+        db.logGameResult({
+          roomName: room,
+          packName: Object.keys(rooms[room].pack)[0],
+          winnerName: rooms[room].players[bestPlayerId].name,
+          winnerScore: rooms[room].players[bestPlayerId].score
+        }).catch((err) => {
+          console.error('Failed to log game result to the database:', err.message)
+        })
+      }
     }
 
     if (rooms[room].judge != "Autojudge"){
@@ -400,4 +510,12 @@ io.on('connection', (socket) => {
   }
 })
 
-server.listen(port)
+db.initSchema()
+  .then(() => {
+    server.listen(port)
+    console.log(`Server listening on port ${port}`)
+  })
+  .catch((err) => {
+    console.error('Could not initialize the database — server not started.', err)
+    process.exit(1)
+  })

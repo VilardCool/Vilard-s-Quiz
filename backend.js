@@ -204,7 +204,6 @@ io.on('connection', (socket) => {
           picture: backEndPlayers[uuid].picture
         }))
       }
-      else socket.emit('alreadyInRoom')
     }
 
     socket.emit('updateRooms', rooms)

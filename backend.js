@@ -121,6 +121,23 @@ const backEndPlayers = {}
 const idPlayers = {}
 
 io.on('connection', (socket) => {
+  // Wrap every socket.on handler registered below in a try/catch. An
+  // uncaught exception thrown inside a socket.io event handler crashes the
+  // *entire* Node process — meaning one client hitting an edge case (e.g. a
+  // duplicate connection, a stale room) would kill the game for every
+  // connected room, not just their own session. Catching and logging here
+  // keeps a single bad event from taking the whole server down.
+  const rawOn = socket.on.bind(socket)
+  socket.on = (event, handler) => {
+    rawOn(event, async (...args) => {
+      try {
+        await handler(...args)
+      } catch (err) {
+        console.error(`Unhandled error in '${event}' handler:`, err)
+      }
+    })
+  }
+
   socket.on('requestProposedRoom', () => {
     db.listPacks()
       .then((filesName) => {
@@ -195,6 +212,13 @@ io.on('connection', (socket) => {
 
   socket.on('playerConnect', async ({room}) => {
     if (socket.playerReady) await socket.playerReady
+
+    // If 'connected' never attached this socket to a player record (e.g.
+    // this uuid already had an active connection elsewhere and got
+    // 'alreadyInRoom' instead), there is nothing to join a room with —
+    // bail out instead of crashing on `backEndPlayers[undefined]`.
+    if (!idPlayers[socket.id] || !backEndPlayers[idPlayers[socket.id]]) return
+
     if (!rooms[room]) return
 
     const game = {}
@@ -252,7 +276,7 @@ io.on('connection', (socket) => {
   socket.on('changeProfilePicture', async ({image}) => {
     if (socket.playerReady) await socket.playerReady
     const uuid = idPlayers[socket.id]
-    if (!backEndPlayers[uuid]) return
+    if (!uuid || !backEndPlayers[uuid]) return
     backEndPlayers[uuid].picture = image
     db.updatePlayerPicture(uuid, image).catch((err) => {
       console.error('Failed to save profile picture to the database:', err.message)
@@ -296,7 +320,7 @@ io.on('connection', (socket) => {
   socket.on('changeProfileName', async ({name}) => {
     if (socket.playerReady) await socket.playerReady
     const uuid = idPlayers[socket.id]
-    if (!backEndPlayers[uuid]) return
+    if (!uuid || !backEndPlayers[uuid]) return
     backEndPlayers[uuid].name = name
     db.updatePlayerName(uuid, name).catch((err) => {
       console.error('Failed to save profile name to the database:', err.message)
@@ -355,6 +379,7 @@ io.on('connection', (socket) => {
 
   socket.on('playerQuestionKeydown', async ({room, player, width}) => {
     if (socket.playerReady) await socket.playerReady
+    if (!idPlayers[socket.id] || !backEndPlayers[idPlayers[socket.id]]) return
     rooms[room].turn = player
     rooms[room].canAnswer = false
     rooms[room].width = width
@@ -375,6 +400,7 @@ io.on('connection', (socket) => {
 
   socket.on('playerQuestion', async ({room, question, nextPlayer}) => {
     if (socket.playerReady) await socket.playerReady
+    if (!idPlayers[socket.id] || !backEndPlayers[idPlayers[socket.id]]) return
     rooms[room].currentQuestion = question
     rooms[room].turn = nextPlayer
     rooms[room].canAnswer = true
@@ -390,6 +416,7 @@ io.on('connection', (socket) => {
 
   socket.on('playerAnswer', async ({room, question, answer}) => {
     if (socket.playerReady) await socket.playerReady
+    if (!idPlayers[socket.id] || !backEndPlayers[idPlayers[socket.id]]) return
     const questionInfo = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
     let correctAns
     if (questionInfo.type == "test") correctAns = questionInfo.answer[questionInfo.answer[4]-1]

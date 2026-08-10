@@ -1,6 +1,5 @@
 const crypto = require('crypto')
 const db = require('./db')
-require('dotenv').config()
 
 const express = require('express')
 const app = express()
@@ -139,7 +138,11 @@ io.on('connection', (socket) => {
 
   socket.on('connected', ({uuid}) => {
     if (!backEndPlayers[uuid]){
-      db.getOrCreatePlayer(uuid)
+      // Store the in-flight promise on the socket itself — every other
+      // handler below awaits it first, so a 'playerConnect' (or any other
+      // event) that arrives before the DB lookup finishes waits for the
+      // player record to exist instead of crashing on `undefined`.
+      socket.playerReady = db.getOrCreatePlayer(uuid)
         .then((profile) => {
           // A second event for the same uuid could have arrived while we
           // were waiting on the DB — don't clobber it if so.
@@ -190,7 +193,8 @@ io.on('connection', (socket) => {
     socket.emit('updateRooms', rooms)
   })
 
-  socket.on('playerConnect', ({room}) => {
+  socket.on('playerConnect', async ({room}) => {
+    if (socket.playerReady) await socket.playerReady
     if (!rooms[room]) return
 
     const game = {}
@@ -245,8 +249,10 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('changeProfilePicture', ({image}) => {
+  socket.on('changeProfilePicture', async ({image}) => {
+    if (socket.playerReady) await socket.playerReady
     const uuid = idPlayers[socket.id]
+    if (!backEndPlayers[uuid]) return
     backEndPlayers[uuid].picture = image
     db.updatePlayerPicture(uuid, image).catch((err) => {
       console.error('Failed to save profile picture to the database:', err.message)
@@ -287,15 +293,18 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('changeProfileName', ({name}) => {
+  socket.on('changeProfileName', async ({name}) => {
+    if (socket.playerReady) await socket.playerReady
     const uuid = idPlayers[socket.id]
+    if (!backEndPlayers[uuid]) return
     backEndPlayers[uuid].name = name
     db.updatePlayerName(uuid, name).catch((err) => {
       console.error('Failed to save profile name to the database:', err.message)
     })
   })
 
-  socket.on('disconnect', (reason) => {
+  socket.on('disconnect', async (reason) => {
+    if (socket.playerReady) await socket.playerReady
     if (backEndPlayers[idPlayers[socket.id]]) {
       if (backEndPlayers[idPlayers[socket.id]].room) {
         if (rooms[backEndPlayers[idPlayers[socket.id]].room].turn == socket.id) {
@@ -344,7 +353,8 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('playerQuestionKeydown', ({room, player, width}) => {
+  socket.on('playerQuestionKeydown', async ({room, player, width}) => {
+    if (socket.playerReady) await socket.playerReady
     rooms[room].turn = player
     rooms[room].canAnswer = false
     rooms[room].width = width
@@ -363,7 +373,8 @@ io.on('connection', (socket) => {
       sendAnswer(room, rooms[room].turn, rooms[room].currentQuestion)
   })
 
-  socket.on('playerQuestion', ({room, question, nextPlayer}) => {
+  socket.on('playerQuestion', async ({room, question, nextPlayer}) => {
+    if (socket.playerReady) await socket.playerReady
     rooms[room].currentQuestion = question
     rooms[room].turn = nextPlayer
     rooms[room].canAnswer = true
@@ -377,7 +388,8 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('playerAnswer', ({room, question, answer}) => {
+  socket.on('playerAnswer', async ({room, question, answer}) => {
+    if (socket.playerReady) await socket.playerReady
     const questionInfo = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
     let correctAns
     if (questionInfo.type == "test") correctAns = questionInfo.answer[questionInfo.answer[4]-1]

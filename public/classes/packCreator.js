@@ -4,6 +4,8 @@ pack["Name"] = {
   rounds: {}
 }
 
+let roundCounter = 0
+
 document.querySelector('#createButton').addEventListener('click', (
   event) => {
     menu = document.querySelector('#menu')
@@ -157,15 +159,26 @@ document.querySelector('#addRound').addEventListener('click', (
     create = addRound.parentElement
     create.insertBefore(newRound, addRound)
 
-    numRound = Object.keys(pack[Object.keys(pack)[0]].rounds).length
+    numRound = roundCounter++
 
     pack[Object.keys(pack)[0]].rounds[`round_${numRound}`] = {questions: {}}
 
-    newRound.setAttribute("style", "margin-left: 5%")
+    newRound.setAttribute("class", "packRound")
     newRound.setAttribute("name", `round_${numRound}`)
-    newRound.innerHTML = `<h3 style="display: inline-block;">Round name:</h3>
-    <input id="round_${numRound}" name="round_${numRound}" type="text" placeholder="round_${numRound}">
-    <button id="addQuestion_${numRound}" style="display: block;">Add question</button>`
+    newRound.dataset.qCounter = "0"
+    newRound.innerHTML = `<div class="packRound__header">
+      <span class="packRound__badge">Round ${numRound + 1}</span>
+      <input id="round_${numRound}" name="round_${numRound}" type="text" class="form packRound__nameInput" placeholder="round_${numRound}">
+      <button type="button" class="packRound__delete" data-action="delete-round" aria-label="Delete round">&times;</button>
+    </div>
+    <button id="addQuestion_${numRound}" type="button" class="confirmButton c packRound__addQuestion">+ Add question</button>`
+
+    newRound.querySelector('[data-action="delete-round"]').addEventListener('click', () => {
+      if (!confirm('Delete this round and all its questions?')) return
+      delete pack[Object.keys(pack)[0]].rounds[newRound.getAttribute("name")]
+      newRound.remove()
+    })
+
     document.querySelector(`#round_${numRound}`).addEventListener('change', (
       event) => {
         roundName = document.querySelector(`#${event.target.id}`)
@@ -173,7 +186,7 @@ document.querySelector('#addRound').addEventListener('click', (
         newName = roundName.value
         roundName.name = newName
 
-        roundName.parentElement.setAttribute("name", `${newName}`)
+        roundName.parentElement.parentElement.setAttribute("name", `${newName}`)
 
         valueToReplace = pack[Object.keys(pack)[0]].rounds[oldName]
         pack[Object.keys(pack)[0]].rounds[newName] = valueToReplace
@@ -190,7 +203,8 @@ document.querySelector('#addRound').addEventListener('click', (
 
         info = event.target.id.split('_')
         numRound = info[1]
-        numQuestion = Object.keys(pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions).length
+        numQuestion = Number(round.dataset.qCounter)
+        round.dataset.qCounter = String(numQuestion + 1)
 
         pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[`question_${numRound}_${numQuestion}`] = {
             cost: 0,
@@ -203,44 +217,56 @@ document.querySelector('#addRound').addEventListener('click', (
             passed: 0
         }
 
-        newQuestion.setAttribute("style", "margin-left: 5%; margin-top: 1%; background: rgba(0,0,0, 0.2);")
+        newQuestion.setAttribute("class", "packQuestion")
         newQuestion.setAttribute("name", `question_${numRound}_${numQuestion}`)
-        newQuestion.innerHTML = `<p style="display: inline-block;">Cost:</p>
-        <input id="cost_${numRound}_${numQuestion}" type="number" inputmode="numeric" min="0" max="10000" placeholder="0">
-        <p style="display: inline-block; margin-left: 2%;">Data:</p>
-        <select id="data_${numRound}_${numQuestion}">
+        newQuestion.innerHTML = `<div class="packQuestion__toolbar">
+          <span class="packQuestion__badge">Question ${numQuestion + 1}</span>
+          <button type="button" class="packQuestion__delete" data-action="delete-question" aria-label="Delete question">&times;</button>
+        </div>
+        <div class="packQuestion__meta">
+        <p>Cost:</p>
+        <input id="cost_${numRound}_${numQuestion}" type="number" inputmode="numeric" min="0" max="10000" placeholder="0" class="form">
+        <p>Data:</p>
+        <select id="data_${numRound}_${numQuestion}" class="form">
           <option value="text">Text</option>
           <option value="image">Image</option>
         </select>
-        <p style="display: inline-block; margin-left: 2%;">Type:</p>
-        <select id="type_${numRound}_${numQuestion}">
+        <p>Type:</p>
+        <select id="type_${numRound}_${numQuestion}" class="form">
           <option value="simple">Simple</option>
           <option value="test">Test</option>
           <option value="true">True | False</option>
         </select>
-        <p style="display: inline-block; margin-left: 2%;">Bonus:</p>
-        <select id="bonus_${numRound}_${numQuestion}">
+        <p>Bonus:</p>
+        <select id="bonus_${numRound}_${numQuestion}" class="form">
           <option value="none">None</option>
           <option value="choose">Choose player</option>
           <option value="double">Double reward</option>
           <option value="punishment">Punishment</option>
         </select>
-        <div id="contentField_${numRound}_${numQuestion}">
-          <div id="content_${numRound}_${numQuestion}"></div>
-          <p style="display: inline-block; vertical-align: top;">Question:</p>
-          <textarea style="field-sizing: content; overflow-y: hidden; resize: none; width: 70%; margin-top: 2%;" id="question_${numRound}_${numQuestion}"></textarea>
         </div>
-        <div id="answerField_${numRound}_${numQuestion}">
-          <p style="display: inline-block;">Answer:</p>
-          <div style="display: inline-block;" id="answer_type_${numRound}_${numQuestion}">
-            <input id="answer_${numRound}_${numQuestion}" type="text">
+        <div id="contentField_${numRound}_${numQuestion}" class="packQuestion__content">
+          <div id="content_${numRound}_${numQuestion}"></div>
+          <p>Question:</p>
+          <textarea style="field-sizing: content;" id="question_${numRound}_${numQuestion}" class="form packQuestion__textarea"></textarea>
+        </div>
+        <div id="answerField_${numRound}_${numQuestion}" class="packQuestion__answer">
+          <p>Answer:</p>
+          <div id="answer_type_${numRound}_${numQuestion}" class="packQuestion__answerType">
+            <input id="answer_${numRound}_${numQuestion}" type="text" class="form">
           </div>
         </div>`
+
+        newQuestion.querySelector('[data-action="delete-question"]').addEventListener('click', () => {
+          if (!confirm('Delete this question?')) return
+          delete pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[newQuestion.getAttribute("name")]
+          newQuestion.remove()
+        })
         
         document.querySelector(`#cost_${numRound}_${numQuestion}`).addEventListener('change', (
           event) => {
             change = document.querySelector(`#${event.target.id}`)
-            question = change.parentElement
+            question = change.parentElement.parentElement
             round = question.parentElement
             pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].cost = change.value
           }
@@ -249,7 +275,7 @@ document.querySelector('#addRound').addEventListener('click', (
         document.querySelector(`#data_${numRound}_${numQuestion}`).addEventListener('change', (
           event) => {
             change = document.querySelector(`#${event.target.id}`)
-            question = change.parentElement
+            question = change.parentElement.parentElement
             round = question.parentElement
             pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].data = change.value
 
@@ -263,11 +289,10 @@ document.querySelector('#addRound').addEventListener('click', (
                 content.innerHTML = ""
                 break
               case "image":
-                content.innerHTML = `<div style="border: 1px solid #1d86dbff; 
-                    border-radius: 4px; cursor: pointer; max-width: 100%;" id="image_${numRound}_${numQuestion}">
-                  <p style="position: relative; z-index: -1" id="imageText_${numRound}_${numQuestion}">Drag and drop images here, or click to select files.</p>
+                content.innerHTML = `<div class="packQuestion__dropzone" id="image_${numRound}_${numQuestion}">
+                  <p class="packQuestion__dropzoneText" id="imageText_${numRound}_${numQuestion}">Drag and drop an image here, or click to select a file.</p>
                   <input type="file" style="position: relative; z-index: -1" id="file-input_${numRound}_${numQuestion}" accept="image/*" hidden>
-                  <img id="img_${numRound}_${numQuestion}" style="position: relative; z-index: -1; max-width: 100%;">
+                  <img id="img_${numRound}_${numQuestion}" class="packQuestion__dropzoneImg">
                 </div>`
                 
                 const dropZone = document.getElementById(`image_${numRound}_${numQuestion}`)
@@ -282,7 +307,7 @@ document.querySelector('#addRound').addEventListener('click', (
         document.querySelector(`#type_${numRound}_${numQuestion}`).addEventListener('change', (
           event) => {
             change = document.querySelector(`#${event.target.id}`)
-            question = change.parentElement
+            question = change.parentElement.parentElement
             round = question.parentElement
             pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].type = change.value
             
@@ -293,7 +318,7 @@ document.querySelector('#addRound').addEventListener('click', (
             content = document.querySelector(`#answer_type_${numRound}_${numQuestion}`)
             switch(change.value){
               case "simple":
-                content.innerHTML = `<input id="answer_${numRound}_${numQuestion}" type="text">`
+                content.innerHTML = `<input id="answer_${numRound}_${numQuestion}" type="text" class="form">`
 
                 pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = ""
 
@@ -305,17 +330,17 @@ document.querySelector('#addRound').addEventListener('click', (
                 )
                 break
               case "test":
-                content.innerHTML = `<input id="answer_${numRound}_${numQuestion}_0" type="text">
-                <input id="answer_${numRound}_${numQuestion}_1" type="text">
-                <input id="answer_${numRound}_${numQuestion}_2" type="text">
-                <input id="answer_${numRound}_${numQuestion}_3" type="text">
-                <p>Correct:</p>
-                <select id="answer_${numRound}_${numQuestion}_4">
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                </select>`
+                content.innerHTML = `<div class="packQuestion__testRow"><span class="packQuestion__testTag">A</span><input id="answer_${numRound}_${numQuestion}_0" type="text" class="form"></div>
+                <div class="packQuestion__testRow"><span class="packQuestion__testTag">B</span><input id="answer_${numRound}_${numQuestion}_1" type="text" class="form"></div>
+                <div class="packQuestion__testRow"><span class="packQuestion__testTag">C</span><input id="answer_${numRound}_${numQuestion}_2" type="text" class="form"></div>
+                <div class="packQuestion__testRow"><span class="packQuestion__testTag">D</span><input id="answer_${numRound}_${numQuestion}_3" type="text" class="form"></div>
+                <div class="packQuestion__testRow"><p>Correct:</p>
+                <select id="answer_${numRound}_${numQuestion}_4" class="form">
+                  <option value="1">A</option>
+                  <option value="2">B</option>
+                  <option value="3">C</option>
+                  <option value="4">D</option>
+                </select></div>`
 
                 pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].answer = {0:"A", 1:"B", 2:"C", 3:"D", 4:1}
 
@@ -351,7 +376,7 @@ document.querySelector('#addRound').addEventListener('click', (
                 )
                 break
               case "true":
-                content.innerHTML = `<select id="answer_${numRound}_${numQuestion}_t">
+                content.innerHTML = `<select id="answer_${numRound}_${numQuestion}_t" class="form">
                     <option value="true">True</option>
                     <option value="false">False</option>
                   </select>`
@@ -372,7 +397,7 @@ document.querySelector('#addRound').addEventListener('click', (
         document.querySelector(`#bonus_${numRound}_${numQuestion}`).addEventListener('change', (
           event) => {
             change = document.querySelector(`#${event.target.id}`)
-            question = change.parentElement
+            question = change.parentElement.parentElement
             round = question.parentElement
             pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].bonus = change.value
           }

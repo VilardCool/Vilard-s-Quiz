@@ -1,5 +1,6 @@
 <html translate="no">
   <head>
+    <meta charset="UTF-8">
     <title>Vilard's Quiz</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="/img/Logo.png">
@@ -9,33 +10,37 @@
   </head>
   <body class="background">
     <div id="pauseMenu"></div>
-    <div class="container">
-      <div style="grid-area: title">
-        <a href="/"><img src="/img/Title.png"></a>
-      </div>
-      <div class="judgePlace">
+    <main class="container">
+      <header style="grid-area: title">
+        <a href="/"><img src="/img/Title.png" alt="Back to menu"></a>
+      </header>
+      <section class="judgePlace" aria-label="Judge">
         <div class="neon-text" style="max-height: 100%;" id="judgeLabel"></div>
-      </div>
-      <div class="playersPlace">
+      </section>
+      <section class="playersPlace" aria-label="Players">
         <div class="glow" style="margin-bottom: 8px;">Players</div>
         <div id="playerLabels"></div>
-      </div>   
-      <div id="gamefield" class="gamefield">
+      </section>
+      <section id="gamefield" class="gamefield" aria-label="Board">
+        <div id="boardLoading" class="boardLoading">
+          <div class="spinner" aria-hidden="true"></div>
+          <p>Loading the pack&hellip;</p>
+        </div>
         <div id="rounds"></div>
         <div id="questionField" class="questionField" style="display: none;"></div>
-      </div>  
-      <div class="playersPlace2">
+      </section>
+      <section class="playersPlace2" aria-label="Players">
         <div class="glow" style="margin-bottom: 8px;">Players</div>
         <div id="playerLabels2"></div>
-      </div>  
-      <div id="roundControl" style="grid-area: control"></div>   
-      <div class="activeField">
+      </section>
+      <section class="activeField" aria-label="Answer">
         <div id="announcement"></div>
         <div id="answerField"></div>
         <div id="waitForJudge" style="display: none;">Waiting for judge</div>
-      </div>  
+      </section>
+      <footer id="roundControl" style="grid-area: control"></footer>
       <div style="grid-area: points"></div>
-    </div>
+    </main>
   </body>
   <script>
     const roomName = "<%= roomName %>"

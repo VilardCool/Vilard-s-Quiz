@@ -16,6 +16,15 @@ app.use(express.urlencoded({ extended: true }))
 
 const port = process.env.PORT || 3000
 
+const DEFAULT_ANSWER_TIME = 20 // seconds
+const BUZZ_IN_TIME = 5 // seconds — matches the previous client-side 100 × 50ms window
+
+function parseAnswerTime(value) {
+  const seconds = parseInt(value, 10)
+  if (!Number.isFinite(seconds)) return DEFAULT_ANSWER_TIME
+  return Math.min(120, Math.max(5, seconds))
+}
+
 const rooms = {}
 
 app.get('/', (req, res) => {
@@ -34,6 +43,8 @@ app.post("/room", upload.single('pack'), (req, res) => {
   let judge = null
   if (req.body.autojudge) judge = "Autojudge"
 
+  const answerTime = parseAnswerTime(req.body.answerTime)
+
   let jsonContent
   try {
     jsonContent = JSON.parse(req.file.buffer.toString('utf8'))
@@ -49,6 +60,9 @@ app.post("/room", upload.single('pack'), (req, res) => {
     turn: null,
     canAnswer: false,
     width: 100,
+    answerTime: answerTime,
+    answerTimer: null,
+    buzzTimer: null,
     currentRound: Object.keys(Object.values(jsonContent)[0].rounds)[0],
     currentQuestion: null
   }
@@ -79,6 +93,8 @@ app.post("/proposedRoom", async (req, res) => {
   let judge = null
   if (req.body.proposedAutojudge) judge = "Autojudge"
 
+  const answerTime = parseAnswerTime(req.body.proposedAnswerTime)
+
   let jsonContent
   try {
     jsonContent = await db.getPack(proposedRoom)
@@ -99,6 +115,9 @@ app.post("/proposedRoom", async (req, res) => {
     turn: null,
     canAnswer: false,
     width: 100,
+    answerTime: answerTime,
+    answerTimer: null,
+    buzzTimer: null,
     currentRound: Object.keys(Object.values(jsonContent)[0].rounds)[0],
     currentQuestion: null
   }
@@ -404,20 +423,53 @@ io.on('connection', (socket) => {
   socket.on('playerQuestionKeydown', async ({room, player, width}) => {
     if (socket.playerReady) await socket.playerReady
     if (!idPlayers[socket.id] || !backEndPlayers[idPlayers[socket.id]]) return
+
+    // Someone buzzed in before the server's own "nobody answered" timeout —
+    // cancel it, we're moving into the answer phase now.
+    if (rooms[room].buzzTimer) {
+      clearTimeout(rooms[room].buzzTimer)
+      rooms[room].buzzTimer = null
+    }
+
     rooms[room].turn = player
     rooms[room].canAnswer = false
     rooms[room].width = width
+
+    // The server, not the client, now owns the answer deadline: whatever
+    // the player was buzzing in with, they get a fresh, fixed window from
+    // this exact moment to actually submit an answer.
+    if (rooms[room].answerTimer) clearTimeout(rooms[room].answerTimer)
+    const questionInProgress = rooms[room].currentQuestion
+    rooms[room].answerTimer = setTimeout(() => {
+      if (rooms[room]) rooms[room].answerTimer = null
+      // Guard against a stale timer firing after this question was
+      // already resolved some other way (manual skip, room cleanup, ...).
+      if (rooms[room] && rooms[room].currentQuestion === questionInProgress) {
+        sendAnswer(room, rooms[room].turn, rooms[room].currentQuestion)
+      }
+    }, (rooms[room].answerTime || DEFAULT_ANSWER_TIME) * 1000)
+
     io.to(rooms[room].judge).emit('provideAnswer', {
       player: player,
-      question: rooms[room].currentQuestion})
+      question: rooms[room].currentQuestion,
+      answerTime: rooms[room].answerTime})
     for (const playerC in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(playerC).emit('provideAnswer', {
         player: player,
-        question: rooms[room].currentQuestion})
+        question: rooms[room].currentQuestion,
+        answerTime: rooms[room].answerTime})
     }
   })
 
   socket.on('skipQuestion', ({room}) => {
+    if (rooms[room].buzzTimer) {
+      clearTimeout(rooms[room].buzzTimer)
+      rooms[room].buzzTimer = null
+    }
+    if (rooms[room].answerTimer) {
+      clearTimeout(rooms[room].answerTimer)
+      rooms[room].answerTimer = null
+    }
     if (rooms[room].currentQuestion)
       sendAnswer(room, rooms[room].turn, rooms[room].currentQuestion)
   })
@@ -428,19 +480,42 @@ io.on('connection', (socket) => {
     rooms[room].currentQuestion = question
     rooms[room].turn = nextPlayer
     rooms[room].canAnswer = true
+
+    // Nobody buzzed in — the server, not a client, decides when to give up
+    // on this question and move on.
+    if (rooms[room].buzzTimer) clearTimeout(rooms[room].buzzTimer)
+    const questionInProgress = question
+    rooms[room].buzzTimer = setTimeout(() => {
+      if (rooms[room]) rooms[room].buzzTimer = null
+      if (rooms[room] && rooms[room].currentQuestion === questionInProgress) {
+        sendAnswer(room, rooms[room].turn, rooms[room].currentQuestion)
+      }
+    }, BUZZ_IN_TIME * 1000)
+
     io.to(rooms[room].judge).emit('questionDisplay', {
       question: question,
-      widthS: rooms[room].width})
+      widthS: rooms[room].width,
+      answerTime: rooms[room].answerTime,
+      buzzTime: BUZZ_IN_TIME})
     for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(player).emit('questionDisplay', {
         question: question,
-        widthS: rooms[room].width})
+        widthS: rooms[room].width,
+        answerTime: rooms[room].answerTime,
+        buzzTime: BUZZ_IN_TIME})
     }
   })
 
   socket.on('playerAnswer', async ({room, question, answer}) => {
     if (socket.playerReady) await socket.playerReady
     if (!idPlayers[socket.id] || !backEndPlayers[idPlayers[socket.id]]) return
+
+    // The player responded in time — the server-side deadline no longer applies.
+    if (rooms[room].answerTimer) {
+      clearTimeout(rooms[room].answerTimer)
+      rooms[room].answerTimer = null
+    }
+
     const questionInfo = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
     let correctAns
     if (questionInfo.type == "test") correctAns = questionInfo.answer[questionInfo.answer[4]-1]

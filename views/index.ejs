@@ -1,5 +1,6 @@
 <html translate="no">
   <head>
+    <meta charset="UTF-8">
     <title>Vilard's Quiz</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="/img/Logo.png">
@@ -10,55 +11,64 @@
   </head>
   <body class="background">
     <div id="pauseMenu"></div>
+
     <div id="hostMenu" class="hostMenu">
+      <button id="hostMenuClose" class="confirmButton false" style="align-self: flex-end;">Back</button>
       <div id="hostMenuRooms"></div>
       <div id="hostMenuSettings"></div>
       <div id="hostMenuHost"></div>
     </div>
-    <div style="text-align: center;">
-      <img src="/img/Title.png">
-    </div>
-    <div id="menu" class="menu">
-        <div class="mainMenu">
-          <div class="dropInput" id="image_p_p">
-            <input type="file" style="position: relative; z-index: 1" id="file-input_p_p" accept="image/*" hidden>
-            <img id="img_p_p" style="max-width: 100%;" src="/img/profilePicture.png">
-          </div>
-          <input id="profileName" type="text" class="form" placeholder="User" style="margin-bottom: 10%;">
-          <button id="host" class="confirmButton true" style="width: 90%;">Host</button>
-          <!--
-          <form action="/room" method="post" enctype="multipart/form-data">
-            <input id="room" name="room" type="text" class="form" placeholder="Room name" required>
-            <input id="pack" name="pack" type="file" style="width: 100%;" required>
-            <button id="host" type="submit" class="confirmButton true">Host</button>
-          </form>
-          -->
-          <form action="/proposedRoom" method="post" style="display: none;">
-            <input id="proposedAutojudge" name="proposedAutojudge" type="checkbox" style="display: none;">
-            <input id="proposedRoom" name="proposedRoom" type="text" value="Test">
-            <button id="proposedHost" type="submit" class="confirmButton true">Test</button>
-          </form>
-          <button id="createButton" class="confirmButton b" style="width: 90%; margin-bottom: 30px;">Create</button>
-        </div>
-        <div class="rooms">
-          <div style="margin-bottom: 8px;">Rooms</div>
-          <div id="roomContainer"></div>
-        </div>
-    </div>
 
-    <div id="create" style="display: none;">
-      <button id="menuButton" class="confirmButton true">Menu</button>
-      <button id="import" class="confirmButton true">Import</button>
-      <input id="importPack" type="file" style="display: none;">
-      
-      <div>
-        <h2 style="display: inline-block;">Pack name:</h2>
-        <input id="packName" type="text" class="form" placeholder="Name" style="width: auto; display: inline-block;">
-        <button id="addRound" class="confirmButton c" style="display: block;">Add round</button>
+    <header style="text-align: center;">
+      <img src="/img/Title.png" alt="Vilard's Quiz">
+    </header>
+
+    <main id="menu" class="menu">
+      <section class="mainMenu" aria-label="Your profile">
+        <div class="dropInput" id="image_p_p">
+          <input type="file" style="position: relative; z-index: 1" id="file-input_p_p" accept="image/*" hidden>
+          <img id="img_p_p" style="max-width: 100%;" src="/img/profilePicture.png" alt="Your profile picture">
+        </div>
+        <input id="profileName" type="text" class="form" placeholder="User" style="margin-bottom: 10%;">
+        <button id="host" class="confirmButton true" style="width: 90%;">Host</button>
+        <!--
+        <form action="/room" method="post" enctype="multipart/form-data">
+          <input id="room" name="room" type="text" class="form" placeholder="Room name" required>
+          <input id="pack" name="pack" type="file" style="width: 100%;" required>
+          <button id="host" type="submit" class="confirmButton true">Host</button>
+        </form>
+        -->
+        <form action="/proposedRoom" method="post" style="display: none;">
+          <input id="proposedAutojudge" name="proposedAutojudge" type="checkbox" style="display: none;">
+          <input id="proposedAnswerTime" name="proposedAnswerTime" type="number" style="display: none;">
+          <input id="proposedRoom" name="proposedRoom" type="text" value="Test">
+          <button id="proposedHost" type="submit" class="confirmButton true">Test</button>
+        </form>
+        <button id="createButton" class="confirmButton b" style="width: 90%; margin-bottom: 30px;">Create</button>
+      </section>
+
+      <section class="rooms" aria-label="Open rooms">
+        <div style="margin-bottom: 8px;">Rooms</div>
+        <div id="roomContainer"></div>
+      </section>
+    </main>
+
+    <section id="create" style="display: none;" aria-label="Pack creator">
+      <div class="createToolbar">
+        <button id="menuButton" class="confirmButton false">&larr; Menu</button>
+        <button id="import" class="confirmButton true">Import pack</button>
+        <input id="importPack" type="file" style="display: none;">
       </div>
 
-      <button id="download" class="confirmButton true">Download</button>
-    </div>
+      <div class="packNameRow">
+        <h2>Pack name</h2>
+        <input id="packName" type="text" class="form packNameRow__input" placeholder="Name">
+      </div>
+
+      <button id="addRound" type="button" class="confirmButton c createAddRound">+ Add round</button>
+
+      <button id="download" class="confirmButton true createDownload">Download pack</button>
+    </section>
   </body>
 <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
 <script src="./classes/packCreator.js"></script>

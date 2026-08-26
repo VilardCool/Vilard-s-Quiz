@@ -1,3 +1,12 @@
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+}
+
 let clientUuid = localStorage.getItem("CLIENT_UUID");
 
 const socket = io()
@@ -27,6 +36,12 @@ var timeForQuestion = 50
 
 var timeForAnswer = 250
 
+// True while the server (not this client) owns the countdown deadline —
+// currently that's the answer phase. frame() then only updates the visual
+// bar and never triggers a timeout itself; the server enforces the real
+// cutoff and broadcasts the result when time is up.
+var serverOwnsDeadline = false
+
 socket.emit('playerConnect',  {
   room: roomName
 })
@@ -52,6 +67,9 @@ socket.on('loadRoom', (game) => {
   }
 
   roundPlace.children[0].style = ""
+
+  const boardLoading = document.querySelector('#boardLoading')
+  if (boardLoading) boardLoading.remove()
 })
 
 socket.on('alreadyInRoom', () => {
@@ -89,15 +107,15 @@ socket.on('updatePlayers', (backEndPlayers) => {
         Object.keys(frontEndPlayers).length % 2 == 0) playerLabels = document.querySelector('#playerLabels2')
 
       playerLabels.innerHTML += `<div id="player_${id}" style="background-color: rgba(127, 0, 255, 0.3);">
-                      <img class="profilePicture" src="${picture}">
-                      <div>${backEndPlayer.name}: ${backEndPlayer.score}</div>
+                      <img class="profilePicture" src="${escapeHtml(picture)}">
+                      <div>${escapeHtml(backEndPlayer.name)}: ${backEndPlayer.score}</div>
                     </div>`
     } else {
       frontEndPlayers[id].name = backEndPlayer.name
       frontEndPlayers[id].score = backEndPlayer.score
       document.querySelector(`#player_${id}`).innerHTML = `<div id="player_${id}">
-                      <img class="profilePicture" src="${picture}">
-                      <div>${backEndPlayer.name}: ${backEndPlayer.score}</div>
+                      <img class="profilePicture" src="${escapeHtml(picture)}">
+                      <div>${escapeHtml(backEndPlayer.name)}: ${backEndPlayer.score}</div>
                     </div>`
     }
   }
@@ -135,8 +153,8 @@ socket.on('judgeChange', ({judgeName, judgePicture}) => {
     if (judgePicture) picture = judgePicture
     else picture = "/img/profilePicture.png"
   }
-  document.querySelector('#judgeLabel').innerHTML = `<img class="profilePicture" src="${picture}">
-  <div>Judge: ${text}</div>`
+  document.querySelector('#judgeLabel').innerHTML = `<img class="profilePicture" src="${escapeHtml(picture)}">
+  <div>Judge: ${escapeHtml(text)}</div>`
 })
 
 socket.on('judgeControl', () => {
@@ -148,9 +166,10 @@ socket.on('judgeControl', () => {
         })
 })
 
-socket.on('questionDisplay', ({question, widthS}) => {
+socket.on('questionDisplay', ({question, widthS, buzzTime}) => {
   clearInterval(interval);
   width = widthS
+  serverOwnsDeadline = true
   if (socket.id != turn && !alreadyAnswer) {
     canAnswer = true
   }
@@ -163,12 +182,12 @@ socket.on('questionDisplay', ({question, widthS}) => {
   field.style.display = ""
   switch (Object.values(questionList.rounds)[0].questions[question].data){
     case "text":
-      field.innerHTML = `<div>${Object.values(questionList.rounds)[0].questions[question].question}</div>`
+      field.innerHTML = `<div>${escapeHtml(Object.values(questionList.rounds)[0].questions[question].question)}</div>`
       break
     case "image":
-      field.innerHTML = `<img class="gamePicture" src=${Object.values(questionList.rounds)[0].questions[question].content}>`
+      field.innerHTML = `<img class="gamePicture" src="${escapeHtml(Object.values(questionList.rounds)[0].questions[question].content)}">`
       questText = Object.values(questionList.rounds)[0].questions[question].question
-      if (questText) field.innerHTML +=`<div>${questText}</div>`
+      if (questText) field.innerHTML +=`<div>${escapeHtml(questText)}</div>`
       break
   }
 
@@ -190,7 +209,11 @@ socket.on('questionDisplay', ({question, widthS}) => {
     }
   })
 
-  interval = setInterval(frame, timeForQuestion);
+  // Purely visual now, paced to finish in sync with the server's own
+  // "nobody buzzed in" deadline (buzzTime, in seconds) — the server
+  // decides when this question actually times out, not this timer.
+  const buzzTickMs = ((buzzTime || 5) * 1000) / 100
+  interval = setInterval(frame, buzzTickMs);
 })
 
 function frame() {
@@ -201,16 +224,22 @@ function frame() {
   }
   if (width <= 0) {
     clearInterval(interval)
-    socket.emit('skipQuestion',  {
-      room: roomName
-    })
+    // The server owns every real deadline now (buzz-in and answer phases
+    // alike) and broadcasts the result itself — this only stops the
+    // animation. The one exception is the post-answer "waiting for judge"
+    // bar, which is a distinct fallback and still client-paced.
+    if (!serverOwnsDeadline) {
+      socket.emit('skipQuestion',  {
+        room: roomName
+      })
+    }
   } else {
     width--;
     elem.style.width = width + "%";
   }
 }
 
-socket.on('provideAnswer', ({player, question}) => {
+socket.on('provideAnswer', ({player, question, answerTime}) => {
   canAnswer = false
   clearInterval(interval);
   
@@ -233,7 +262,11 @@ socket.on('provideAnswer', ({player, question}) => {
   </div></button>`
 
   width = 100
-  interval = setInterval(frame, timeForAnswer);
+  serverOwnsDeadline = true
+  // The bar is purely visual now — paced to finish in sync with the
+  // server-enforced deadline (answerTime, in seconds), not a hardcoded value.
+  const tickMs = ((answerTime || 20) * 1000) / 100
+  interval = setInterval(frame, tickMs);
 
   if(player == socket.id){
     alreadyAnswer = true
@@ -345,10 +378,11 @@ socket.on('showAnswer', ({player, answer, judge, widthS}) => {
   clearInterval(interval);
 
   width = widthS
+  serverOwnsDeadline = false
   interval = setInterval(frame, timeForQuestion);
   
   field = document.querySelector('#questionField')
-  field.innerHTML += `<div>Answer: ${answer}</div>`
+  field.innerHTML += `<div>Answer: ${escapeHtml(answer)}</div>`
   if(!judge){
     announcement = document.querySelector('#announcement')
     announcement.textContent = `Waiting for points for: ${frontEndPlayers[player].name}`
@@ -360,7 +394,7 @@ socket.on('checkAnswer', ({player, question, correctAnswer, answer}) => {
   answerField.innerHTML = ""
 
   field = document.querySelector('#questionField')
-  field.innerHTML += `<div>Answer: ${answer}</div><div>Correct answer: ${correctAnswer}</div>`
+  field.innerHTML += `<div>Answer: ${escapeHtml(answer)}</div><div>Correct answer: ${escapeHtml(correctAnswer)}</div>`
   announcement = document.querySelector('#announcement')
   announcement.textContent = ``
   answerField = document.querySelector('#answerField')
@@ -495,7 +529,7 @@ document.querySelector('#gamefield').addEventListener('click', (
 
         for (const player in frontEndPlayers) {
           color = String.fromCharCode(Object.keys(frontEndPlayers).indexOf(player) % 4 + 97)
-          answerField.innerHTML += `<button id="${player}" class="confirmButton ${color}">${frontEndPlayers[player].name}</button>`
+          answerField.innerHTML += `<button id="${player}" class="confirmButton ${color}">${escapeHtml(frontEndPlayers[player].name)}</button>`
         }
 
         document.querySelector(`#nextPlayer`).addEventListener('click', (ev) => {

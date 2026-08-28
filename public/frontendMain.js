@@ -95,11 +95,15 @@ socket.on('proposedRoomArray', (files) => {
   }
 
   hostMenuSettings.innerHTML = `<div style="display: inline;">Autojudje:</div> <input type="checkbox" id="auto">
-    <div style="display: inline; margin-left: 16px;">Answer time (sec):</div> <input type="number" id="answerTimeInput" class="form" style="width: 80px; display: inline-block;" value="20" min="5" max="120">`
+    <div style="display: inline; margin-left: 16px;">Buzz-in time (sec):</div> <input type="number" id="buzzTimeInput" class="form" style="width: 80px; display: inline-block;" value="5" min="2" max="60">
+    <div style="display: inline; margin-left: 16px;">Answer time (sec):</div> <input type="number" id="answerTimeInput" class="form" style="width: 80px; display: inline-block;" value="20" min="5" max="120">
+    <div style="display: inline; margin-left: 16px;">Reveal time (sec):</div> <input type="number" id="revealTimeInput" class="form" style="width: 80px; display: inline-block;" value="3" min="1" max="30">`
 
   hostMenuHost.innerHTML = `<form action="/room" method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
       <input id="autojudge" type="checkbox" style="display: none;">
       <input id="answerTime" name="answerTime" type="number" style="display: none;">
+      <input id="buzzTime" name="buzzTime" type="number" style="display: none;">
+      <input id="revealTime" name="revealTime" type="number" style="display: none;">
       <input id="room" name="room" type="text" class="form" placeholder="Room name" required>
       <input id="pack" name="pack" type="file" style="width: 100%;" required>
       <button id="hostSubmit" type="submit" class="confirmButton true">Host</button>
@@ -117,4 +121,20 @@ socket.on('proposedRoomArray', (files) => {
   }
   syncAnswerTime()
   document.querySelector('#answerTimeInput').addEventListener('input', syncAnswerTime)
+
+  const syncBuzzTime = () => {
+    const seconds = document.querySelector('#buzzTimeInput').value
+    document.querySelector('#buzzTime').value = seconds
+    document.querySelector('#proposedBuzzTime').value = seconds
+  }
+  syncBuzzTime()
+  document.querySelector('#buzzTimeInput').addEventListener('input', syncBuzzTime)
+
+  const syncRevealTime = () => {
+    const seconds = document.querySelector('#revealTimeInput').value
+    document.querySelector('#revealTime').value = seconds
+    document.querySelector('#proposedRevealTime').value = seconds
+  }
+  syncRevealTime()
+  document.querySelector('#revealTimeInput').addEventListener('input', syncRevealTime)
 })

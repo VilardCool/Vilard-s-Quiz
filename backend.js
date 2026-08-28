@@ -17,12 +17,25 @@ app.use(express.urlencoded({ extended: true }))
 const port = process.env.PORT || 3000
 
 const DEFAULT_ANSWER_TIME = 20 // seconds
-const BUZZ_IN_TIME = 5 // seconds — matches the previous client-side 100 × 50ms window
+const DEFAULT_BUZZ_TIME = 5 // seconds — matches the previous hardcoded client-side window
+const DEFAULT_REVEAL_TIME = 3 // seconds — pause after a verdict before moving on
 
 function parseAnswerTime(value) {
   const seconds = parseInt(value, 10)
   if (!Number.isFinite(seconds)) return DEFAULT_ANSWER_TIME
   return Math.min(120, Math.max(5, seconds))
+}
+
+function parseBuzzTime(value) {
+  const seconds = parseInt(value, 10)
+  if (!Number.isFinite(seconds)) return DEFAULT_BUZZ_TIME
+  return Math.min(60, Math.max(2, seconds))
+}
+
+function parseRevealTime(value) {
+  const seconds = parseInt(value, 10)
+  if (!Number.isFinite(seconds)) return DEFAULT_REVEAL_TIME
+  return Math.min(30, Math.max(1, seconds))
 }
 
 const rooms = {}
@@ -44,6 +57,8 @@ app.post("/room", upload.single('pack'), (req, res) => {
   if (req.body.autojudge) judge = "Autojudge"
 
   const answerTime = parseAnswerTime(req.body.answerTime)
+  const buzzTime = parseBuzzTime(req.body.buzzTime)
+  const revealTime = parseRevealTime(req.body.revealTime)
 
   let jsonContent
   try {
@@ -61,8 +76,11 @@ app.post("/room", upload.single('pack'), (req, res) => {
     canAnswer: false,
     width: 100,
     answerTime: answerTime,
+    buzzTime: buzzTime,
+    revealTime: revealTime,
     answerTimer: null,
     buzzTimer: null,
+    revealTimer: null,
     currentRound: Object.keys(Object.values(jsonContent)[0].rounds)[0],
     currentQuestion: null
   }
@@ -94,6 +112,8 @@ app.post("/proposedRoom", async (req, res) => {
   if (req.body.proposedAutojudge) judge = "Autojudge"
 
   const answerTime = parseAnswerTime(req.body.proposedAnswerTime)
+  const buzzTime = parseBuzzTime(req.body.proposedBuzzTime)
+  const revealTime = parseRevealTime(req.body.proposedRevealTime)
 
   let jsonContent
   try {
@@ -116,8 +136,11 @@ app.post("/proposedRoom", async (req, res) => {
     canAnswer: false,
     width: 100,
     answerTime: answerTime,
+    buzzTime: buzzTime,
+    revealTime: revealTime,
     answerTimer: null,
     buzzTimer: null,
+    revealTimer: null,
     currentRound: Object.keys(Object.values(jsonContent)[0].rounds)[0],
     currentQuestion: null
   }
@@ -440,6 +463,8 @@ io.on('connection', (socket) => {
     // this exact moment to actually submit an answer.
     if (rooms[room].answerTimer) clearTimeout(rooms[room].answerTimer)
     const questionInProgress = rooms[room].currentQuestion
+    const answerDurationMs = (rooms[room].answerTime || DEFAULT_ANSWER_TIME) * 1000
+    rooms[room].answerDeadline = Date.now() + answerDurationMs
     rooms[room].answerTimer = setTimeout(() => {
       if (rooms[room]) rooms[room].answerTimer = null
       // Guard against a stale timer firing after this question was
@@ -447,17 +472,17 @@ io.on('connection', (socket) => {
       if (rooms[room] && rooms[room].currentQuestion === questionInProgress) {
         sendAnswer(room, rooms[room].turn, rooms[room].currentQuestion)
       }
-    }, (rooms[room].answerTime || DEFAULT_ANSWER_TIME) * 1000)
+    }, answerDurationMs)
 
     io.to(rooms[room].judge).emit('provideAnswer', {
       player: player,
       question: rooms[room].currentQuestion,
-      answerTime: rooms[room].answerTime})
+      answerDeadline: rooms[room].answerDeadline})
     for (const playerC in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(playerC).emit('provideAnswer', {
         player: player,
         question: rooms[room].currentQuestion,
-        answerTime: rooms[room].answerTime})
+        answerDeadline: rooms[room].answerDeadline})
     }
   })
 
@@ -469,6 +494,10 @@ io.on('connection', (socket) => {
     if (rooms[room].answerTimer) {
       clearTimeout(rooms[room].answerTimer)
       rooms[room].answerTimer = null
+    }
+    if (rooms[room].revealTimer) {
+      clearTimeout(rooms[room].revealTimer)
+      rooms[room].revealTimer = null
     }
     if (rooms[room].currentQuestion)
       sendAnswer(room, rooms[room].turn, rooms[room].currentQuestion)
@@ -485,24 +514,24 @@ io.on('connection', (socket) => {
     // on this question and move on.
     if (rooms[room].buzzTimer) clearTimeout(rooms[room].buzzTimer)
     const questionInProgress = question
+    const buzzDurationMs = (rooms[room].buzzTime || DEFAULT_BUZZ_TIME) * 1000
+    rooms[room].buzzDeadline = Date.now() + buzzDurationMs
     rooms[room].buzzTimer = setTimeout(() => {
       if (rooms[room]) rooms[room].buzzTimer = null
       if (rooms[room] && rooms[room].currentQuestion === questionInProgress) {
         sendAnswer(room, rooms[room].turn, rooms[room].currentQuestion)
       }
-    }, BUZZ_IN_TIME * 1000)
+    }, buzzDurationMs)
 
     io.to(rooms[room].judge).emit('questionDisplay', {
       question: question,
       widthS: rooms[room].width,
-      answerTime: rooms[room].answerTime,
-      buzzTime: BUZZ_IN_TIME})
+      buzzDeadline: rooms[room].buzzDeadline})
     for (const player in rooms[backEndPlayers[idPlayers[socket.id]].room].players) {
       io.to(player).emit('questionDisplay', {
         question: question,
         widthS: rooms[room].width,
-        answerTime: rooms[room].answerTime,
-        buzzTime: BUZZ_IN_TIME})
+        buzzDeadline: rooms[room].buzzDeadline})
     }
   })
 
@@ -514,6 +543,14 @@ io.on('connection', (socket) => {
     if (rooms[room].answerTimer) {
       clearTimeout(rooms[room].answerTimer)
       rooms[room].answerTimer = null
+    }
+
+    // Kept around so it can still be shown to everyone once the judge
+    // (or Autojudge) has made a decision — the live "showAnswer" broadcast
+    // below disappears as soon as the question view changes, this persists.
+    rooms[room].lastAnswer = {
+      playerName: backEndPlayers[idPlayers[socket.id]].name,
+      text: answer
     }
 
     const questionInfo = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
@@ -552,6 +589,19 @@ io.on('connection', (socket) => {
     incorrectAnswer(room, player, question)
   })
 
+  function broadcastAnswerResolved(room, correct) {
+    if (!rooms[room].lastAnswer) return
+    const payload = {
+      playerName: rooms[room].lastAnswer.playerName,
+      text: rooms[room].lastAnswer.text,
+      correct: correct
+    }
+    io.to(rooms[room].judge).emit('answerResolved', payload)
+    for (const play in rooms[room].players) {
+      io.to(play).emit('answerResolved', payload)
+    }
+  }
+
   function correctAnswer (room, player, question) {
     const quest = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
 
@@ -567,7 +617,16 @@ io.on('connection', (socket) => {
         break
     }
 
-    sendAnswer(room, player, question)
+    broadcastAnswerResolved(room, true)
+
+    // Give everyone a moment to see the verdict before the board moves on.
+    if (rooms[room].revealTimer) clearTimeout(rooms[room].revealTimer)
+    rooms[room].revealTimer = setTimeout(() => {
+      if (rooms[room]) rooms[room].revealTimer = null
+      if (rooms[room] && rooms[room].currentQuestion === question) {
+        sendAnswer(room, player, question)
+      }
+    }, (rooms[room].revealTime || DEFAULT_REVEAL_TIME) * 1000)
   }
 
   function incorrectAnswer (room, player, question) {
@@ -577,15 +636,44 @@ io.on('connection', (socket) => {
     rooms[room].players[player].score = Math.max(0, score - 50)
 
     if (quest.bonus == "punishment") rooms[room].players[player].score = Math.max(0, score - Number(quest.cost))
-    
-    if (rooms[room].judge != "Autojudge"){
-      io.to(rooms[room].judge).emit('updatePlayers', rooms[backEndPlayers[idPlayers[socket.id]].room].players)
-      io.to(rooms[room].judge).emit('questionDisplay', {question: question, widthS: rooms[room].width})
-    }
-    for (const play in rooms[room].players) {
-      io.to(play).emit('updatePlayers', rooms[room].players)
-      io.to(play).emit('questionDisplay', {question: question, widthS: rooms[room].width})
-    }
+
+    broadcastAnswerResolved(room, false)
+
+    // Give everyone a moment to see the verdict before the question reopens.
+    if (rooms[room].revealTimer) clearTimeout(rooms[room].revealTimer)
+    rooms[room].revealTimer = setTimeout(() => {
+      if (rooms[room]) rooms[room].revealTimer = null
+      if (!rooms[room] || rooms[room].currentQuestion !== question) return
+
+      // Wrong answer reopens the same question for someone else to buzz in —
+      // that's a fresh buzz-in window, so the server's own deadline for it
+      // needs restarting too, same as when a question is first shown.
+      if (rooms[room].buzzTimer) clearTimeout(rooms[room].buzzTimer)
+      const questionInProgress = question
+      const buzzDurationMs = (rooms[room].buzzTime || DEFAULT_BUZZ_TIME) * 1000
+      rooms[room].buzzDeadline = Date.now() + buzzDurationMs
+      rooms[room].buzzTimer = setTimeout(() => {
+        if (rooms[room]) rooms[room].buzzTimer = null
+        if (rooms[room] && rooms[room].currentQuestion === questionInProgress) {
+          sendAnswer(room, rooms[room].turn, rooms[room].currentQuestion)
+        }
+      }, buzzDurationMs)
+
+      if (rooms[room].judge != "Autojudge"){
+        io.to(rooms[room].judge).emit('updatePlayers', rooms[room].players)
+        io.to(rooms[room].judge).emit('questionDisplay', {
+          question: question,
+          widthS: rooms[room].width,
+          buzzDeadline: rooms[room].buzzDeadline})
+      }
+      for (const play in rooms[room].players) {
+        io.to(play).emit('updatePlayers', rooms[room].players)
+        io.to(play).emit('questionDisplay', {
+          question: question,
+          widthS: rooms[room].width,
+          buzzDeadline: rooms[room].buzzDeadline})
+      }
+    }, (rooms[room].revealTime || DEFAULT_REVEAL_TIME) * 1000)
   }
 
   function sendAnswer (room, player, question){

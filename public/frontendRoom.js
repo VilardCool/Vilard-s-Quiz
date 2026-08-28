@@ -32,16 +32,6 @@ var interval
 
 var width = 100
 
-var timeForQuestion = 50
-
-var timeForAnswer = 250
-
-// True while the server (not this client) owns the countdown deadline —
-// currently that's the answer phase. frame() then only updates the visual
-// bar and never triggers a timeout itself; the server enforces the real
-// cutoff and broadcasts the result when time is up.
-var serverOwnsDeadline = false
-
 socket.emit('playerConnect',  {
   room: roomName
 })
@@ -81,9 +71,11 @@ socket.on('alreadyInRoom', () => {
 socket.on('updateTurn', (player) => {
   turn = player
   for (const id in frontEndPlayers) {
-    document.querySelector(`#player_${id}`).style = "background-color: rgba(127, 0, 255, 0.3);"
+    const el = document.querySelector(`#player_${id}`)
+    if (el) el.classList.remove('is-turn')
   }
-  document.querySelector(`#player_${player}`).style = "background-color: rgba(0, 255, 0, 0.3);"
+  const activeEl = document.querySelector(`#player_${player}`)
+  if (activeEl) activeEl.classList.add('is-turn')
   announcement = document.querySelector('#announcement')
   announcement.textContent = `Turn: ${frontEndPlayers[player].name}`
 })
@@ -106,17 +98,15 @@ socket.on('updatePlayers', (backEndPlayers) => {
       if (window.getComputedStyle(document.querySelector('.playersPlace2')).display != "none" && 
         Object.keys(frontEndPlayers).length % 2 == 0) playerLabels = document.querySelector('#playerLabels2')
 
-      playerLabels.innerHTML += `<div id="player_${id}" style="background-color: rgba(127, 0, 255, 0.3);">
+      playerLabels.innerHTML += `<div id="player_${id}">
                       <img class="profilePicture" src="${escapeHtml(picture)}">
                       <div>${escapeHtml(backEndPlayer.name)}: ${backEndPlayer.score}</div>
                     </div>`
     } else {
       frontEndPlayers[id].name = backEndPlayer.name
       frontEndPlayers[id].score = backEndPlayer.score
-      document.querySelector(`#player_${id}`).innerHTML = `<div id="player_${id}">
-                      <img class="profilePicture" src="${escapeHtml(picture)}">
-                      <div>${escapeHtml(backEndPlayer.name)}: ${backEndPlayer.score}</div>
-                    </div>`
+      document.querySelector(`#player_${id}`).innerHTML = `<img class="profilePicture" src="${escapeHtml(picture)}">
+                      <div>${escapeHtml(backEndPlayer.name)}: ${backEndPlayer.score}</div>`
     }
   }
 
@@ -166,13 +156,16 @@ socket.on('judgeControl', () => {
         })
 })
 
-socket.on('questionDisplay', ({question, widthS, buzzTime}) => {
+socket.on('questionDisplay', ({question, widthS, buzzDeadline}) => {
   clearInterval(interval);
   width = widthS
-  serverOwnsDeadline = true
   if (socket.id != turn && !alreadyAnswer) {
     canAnswer = true
   }
+
+  const lastAnswerElQD = document.querySelector('#lastAnswer')
+  lastAnswerElQD.style.display = "none"
+  lastAnswerElQD.innerHTML = ""
 
   announcement = document.querySelector('#announcement')
   announcement.textContent = ``
@@ -209,40 +202,55 @@ socket.on('questionDisplay', ({question, widthS, buzzTime}) => {
     }
   })
 
-  // Purely visual now, paced to finish in sync with the server's own
-  // "nobody buzzed in" deadline (buzzTime, in seconds) — the server
-  // decides when this question actually times out, not this timer.
-  const buzzTickMs = ((buzzTime || 5) * 1000) / 100
-  interval = setInterval(frame, buzzTickMs);
+  // The server sent an absolute deadline (its own Date.now() + duration),
+  // not a duration to count down locally — every player renders against
+  // that same fixed instant, so the bar reads the same for everyone
+  // regardless of network latency or a single client's clock drift.
+  startDeadlineCountdown(buzzDeadline)
 })
 
-function frame() {
-  var elem = document.getElementById("myBar")
-  if (!elem) {
-    clearInterval(interval)
+// Purely visual: recomputes the remaining fraction from a fixed deadline
+// on every tick instead of decrementing a local counter, so a throttled
+// tab or a slow tick doesn't let the bar drift out of sync with the
+// server (and with everyone else's screen) — it self-corrects every frame.
+function startDeadlineCountdown(deadline) {
+  clearInterval(interval)
+  if (!deadline) return
+
+  const totalMs = deadline - Date.now()
+  if (totalMs <= 0) {
+    const elem = document.getElementById("myBar")
+    if (elem) elem.style.width = "0%"
     return
   }
-  if (width <= 0) {
-    clearInterval(interval)
-    // The server owns every real deadline now (buzz-in and answer phases
-    // alike) and broadcasts the result itself — this only stops the
-    // animation. The one exception is the post-answer "waiting for judge"
-    // bar, which is a distinct fallback and still client-paced.
-    if (!serverOwnsDeadline) {
-      socket.emit('skipQuestion',  {
-        room: roomName
-      })
+
+  const tick = () => {
+    const elem = document.getElementById("myBar")
+    if (!elem) {
+      clearInterval(interval)
+      return
     }
-  } else {
-    width--;
-    elem.style.width = width + "%";
+    const remaining = deadline - Date.now()
+    if (remaining <= 0) {
+      elem.style.width = "0%"
+      clearInterval(interval)
+      return
+    }
+    elem.style.width = Math.round((remaining / totalMs) * 100) + "%"
   }
+
+  tick()
+  interval = setInterval(tick, 100)
 }
 
-socket.on('provideAnswer', ({player, question, answerTime}) => {
+socket.on('provideAnswer', ({player, question, answerDeadline}) => {
   canAnswer = false
   clearInterval(interval);
-  
+
+  const lastAnswerEl = document.querySelector('#lastAnswer')
+  lastAnswerEl.style.display = "none"
+  lastAnswerEl.textContent = ""
+
   info = question.split('_')
   numRound = info[1]
   numQuestion = info[2]
@@ -261,12 +269,10 @@ socket.on('provideAnswer', ({player, question, answerTime}) => {
     <div id="myBar"></div>
   </div></button>`
 
-  width = 100
-  serverOwnsDeadline = true
-  // The bar is purely visual now — paced to finish in sync with the
-  // server-enforced deadline (answerTime, in seconds), not a hardcoded value.
-  const tickMs = ((answerTime || 20) * 1000) / 100
-  interval = setInterval(frame, tickMs);
+  // Same fixed-deadline rendering as the buzz-in phase — every player's
+  // bar is computed from the server's answerDeadline instant, not a local
+  // countdown, so they all read the same remaining time.
+  startDeadlineCountdown(answerDeadline)
 
   if(player == socket.id){
     alreadyAnswer = true
@@ -274,8 +280,7 @@ socket.on('provideAnswer', ({player, question, answerTime}) => {
     switch (questionInfo.type){
       case "simple":
         answerField.innerHTML += 
-          `<div>
-            <input
+          `<input
               id="answerInput"
               type="text"
               class="form"
@@ -283,8 +288,7 @@ socket.on('provideAnswer', ({player, question, answerTime}) => {
             />
             <button id="answerButton" class="confirmButton true">
               Send
-            </button>
-          </div>`
+            </button>`
         document.querySelector('#answerButton').addEventListener('click', () => {
           var answer = document.querySelector('#answerInput').value
           socket.emit('playerAnswer',  {
@@ -298,14 +302,10 @@ socket.on('provideAnswer', ({player, question, answerTime}) => {
         break
       case "test":
         answerField.innerHTML += 
-          `<div style="margin-bottom: 10px;">
-            <button id="answerButton_0" class="confirmButton a">${questionInfo.answer[0]}</button>
+          `<button id="answerButton_0" class="confirmButton a">${questionInfo.answer[0]}</button>
             <button id="answerButton_1" class="confirmButton b">${questionInfo.answer[1]}</button>
-          </div>
-          <div>
             <button id="answerButton_2" class="confirmButton c">${questionInfo.answer[2]}</button>
-            <button id="answerButton_3" class="confirmButton d">${questionInfo.answer[3]}</button>
-          </div>`
+            <button id="answerButton_3" class="confirmButton d">${questionInfo.answer[3]}</button>`
         document.querySelector('#answerButton_0').addEventListener('click', () => {
           socket.emit('playerAnswer',  {
             room: roomName,
@@ -345,10 +345,8 @@ socket.on('provideAnswer', ({player, question, answerTime}) => {
         break
       case "true":
         answerField.innerHTML += 
-          `<div>
-            <button id="answerButton_t" class="confirmButton true">True</button>
-            <button id="answerButton_f" class="confirmButton false">False</button>
-          </div>`
+          `<button id="answerButton_t" class="confirmButton true">True</button>
+            <button id="answerButton_f" class="confirmButton false">False</button>`
         document.querySelector('#answerButton_t').addEventListener('click', () => {
           socket.emit('playerAnswer',  {
             room: roomName,
@@ -377,12 +375,16 @@ socket.on('provideAnswer', ({player, question, answerTime}) => {
 socket.on('showAnswer', ({player, answer, judge, widthS}) => {
   clearInterval(interval);
 
-  width = widthS
-  serverOwnsDeadline = false
-  interval = setInterval(frame, timeForQuestion);
-  
   field = document.querySelector('#questionField')
   field.innerHTML += `<div>Answer: ${escapeHtml(answer)}</div>`
+
+  // No timer is actually running server-side while the judge reviews —
+  // clear the leftover progress bar from the answer phase instead of
+  // restarting it, so it doesn't visually (and incorrectly) keep counting
+  // down for everyone watching.
+  answerField = document.querySelector('#answerField')
+  answerField.innerHTML = ""
+
   if(!judge){
     announcement = document.querySelector('#announcement')
     announcement.textContent = `Waiting for points for: ${frontEndPlayers[player].name}`
@@ -421,11 +423,26 @@ socket.on('checkAnswer', ({player, question, correctAnswer, answer}) => {
   })
 })
 
+// Broadcast once the judge (or Autojudge) has made a decision. Unlike the
+// question board / answer area, this element is never touched by the
+// round-picker or next-question transitions, so it keeps showing the last
+// answer to everyone until a new one is actively being answered.
+socket.on('answerResolved', ({playerName, text, correct}) => {
+  const lastAnswerEl = document.querySelector('#lastAnswer')
+  lastAnswerEl.style.display = ""
+  lastAnswerEl.innerHTML = `<span class="lastAnswer__verdict ${correct ? 'is-correct' : 'is-incorrect'}">${correct ? 'Correct' : 'Incorrect'}</span>
+    <span class="lastAnswer__text">${escapeHtml(playerName)}: ${escapeHtml(text)}</span>`
+})
+
 socket.on('showQuestions', ({player, question}) => {
   clearInterval(interval);
   width = 100
   canAnswer = false
   alreadyAnswer = false
+
+  const lastAnswerElSQ = document.querySelector('#lastAnswer')
+  lastAnswerElSQ.style.display = "none"
+  lastAnswerElSQ.innerHTML = ""
 
   field = document.querySelector('#questionField')
   field.style.display = "none"
@@ -459,6 +476,10 @@ socket.on('showQuestionsSkip', () => {
   width = 100
   canAnswer = false
   alreadyAnswer = false
+
+  const lastAnswerElSQS = document.querySelector('#lastAnswer')
+  lastAnswerElSQS.style.display = "none"
+  lastAnswerElSQS.innerHTML = ""
 
   field = document.querySelector('#questionField')
   field.style.display = "none"

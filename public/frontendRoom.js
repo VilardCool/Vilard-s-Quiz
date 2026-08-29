@@ -171,6 +171,7 @@ socket.on('questionDisplay', ({question, widthS, buzzDeadline}) => {
   announcement.textContent = ``
   quest = document.querySelector('#questions')
   quest.style.display = "none"
+  document.querySelector('#rounds').classList.add('compact')
   field = document.querySelector('#questionField')
   field.style.display = ""
   switch (Object.values(questionList.rounds)[0].questions[question].data){
@@ -427,11 +428,16 @@ socket.on('checkAnswer', ({player, question, correctAnswer, answer}) => {
 // question board / answer area, this element is never touched by the
 // round-picker or next-question transitions, so it keeps showing the last
 // answer to everyone until a new one is actively being answered.
-socket.on('answerResolved', ({playerName, text, correct}) => {
+socket.on('answerResolved', ({playerName, text, correct, correctText}) => {
   const lastAnswerEl = document.querySelector('#lastAnswer')
   lastAnswerEl.style.display = ""
   lastAnswerEl.innerHTML = `<span class="lastAnswer__verdict ${correct ? 'is-correct' : 'is-incorrect'}">${correct ? 'Correct' : 'Incorrect'}</span>
     <span class="lastAnswer__text">${escapeHtml(playerName)}: ${escapeHtml(text)}</span>`
+  // Only present for Autojudge — a human judge's own call isn't second-guessed
+  // by showing the "textbook" answer alongside it.
+  if (correctText) {
+    lastAnswerEl.innerHTML += `<span class="lastAnswer__correct">Correct answer: ${escapeHtml(correctText)}</span>`
+  }
 })
 
 socket.on('showQuestions', ({player, question}) => {
@@ -455,6 +461,7 @@ socket.on('showQuestions', ({player, question}) => {
   quest.removeChild(toDel)
 
   quest.style.display = ""
+  document.querySelector('#rounds').classList.remove('compact')
 
   if (!quest.hasChildNodes()){
     rounds = document.querySelector('#rounds')
@@ -489,6 +496,7 @@ socket.on('showQuestionsSkip', () => {
   quest = document.querySelector('#questions')
 
   quest.style.display = ""
+  document.querySelector('#rounds').classList.remove('compact')
 
   rounds = document.querySelector('#rounds')
   toDelRound = rounds.firstChild
@@ -508,6 +516,9 @@ socket.on('gameFinished', () => {
   answerField.innerHTML = ``
   quest = document.querySelector('#questions')
   document.querySelector('#roundControl').innerHTML = "";
+  // Game's over — no next round to show, so hide the round title
+  // entirely (not just compact it) and let the winner text fully center.
+  document.querySelector('#rounds').style.display = "none"
 
   var bestPlayer = Object.keys(frontEndPlayers)[0]
   for (play in frontEndPlayers){
@@ -540,6 +551,7 @@ document.querySelector('#gamefield').addEventListener('click', (
 
         quest = document.querySelector('#questions')
         quest.style.display = "none"
+        document.querySelector('#rounds').classList.add('compact')
         field = document.querySelector('#questionField')
         field.style = ""
         field.innerHTML = "<p>Bonus: Choose next player</p>"

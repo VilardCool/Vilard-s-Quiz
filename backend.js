@@ -548,15 +548,19 @@ io.on('connection', (socket) => {
     // Kept around so it can still be shown to everyone once the judge
     // (or Autojudge) has made a decision — the live "showAnswer" broadcast
     // below disappears as soon as the question view changes, this persists.
-    rooms[room].lastAnswer = {
-      playerName: backEndPlayers[idPlayers[socket.id]].name,
-      text: answer
-    }
-
     const questionInfo = Object.values(rooms[room].pack)[0].rounds[rooms[room].currentRound].questions[question]
     let correctAns
     if (questionInfo.type == "test") correctAns = questionInfo.answer[questionInfo.answer[4]-1]
     else correctAns = questionInfo.answer
+
+    rooms[room].lastAnswer = {
+      playerName: backEndPlayers[idPlayers[socket.id]].name,
+      text: answer,
+      // Only surfaced to everyone for Autojudge — with a human judge, the
+      // stored "textbook" answer isn't authoritative over their own call,
+      // so it stays judge-only (already shown to them via 'checkAnswer').
+      correctText: rooms[room].judge == "Autojudge" ? correctAns : null
+    }
 
     if (rooms[room].judge == "Autojudge"){
       if (answer == correctAns)
@@ -594,7 +598,8 @@ io.on('connection', (socket) => {
     const payload = {
       playerName: rooms[room].lastAnswer.playerName,
       text: rooms[room].lastAnswer.text,
-      correct: correct
+      correct: correct,
+      correctText: rooms[room].lastAnswer.correctText
     }
     io.to(rooms[room].judge).emit('answerResolved', payload)
     for (const play in rooms[room].players) {
@@ -639,6 +644,20 @@ io.on('connection', (socket) => {
 
     broadcastAnswerResolved(room, false)
 
+    // With Autojudge there's no human judge to run a multi-attempt "steal"
+    // round — a wrong answer just ends the question, same as a correct one,
+    // after everyone's had a moment to see the correct answer.
+    if (rooms[room].judge == "Autojudge") {
+      if (rooms[room].revealTimer) clearTimeout(rooms[room].revealTimer)
+      rooms[room].revealTimer = setTimeout(() => {
+        if (rooms[room]) rooms[room].revealTimer = null
+        if (rooms[room] && rooms[room].currentQuestion === question) {
+          sendAnswer(room, player, question)
+        }
+      }, (rooms[room].revealTime || DEFAULT_REVEAL_TIME) * 1000)
+      return
+    }
+
     // Give everyone a moment to see the verdict before the question reopens.
     if (rooms[room].revealTimer) clearTimeout(rooms[room].revealTimer)
     rooms[room].revealTimer = setTimeout(() => {
@@ -659,13 +678,11 @@ io.on('connection', (socket) => {
         }
       }, buzzDurationMs)
 
-      if (rooms[room].judge != "Autojudge"){
-        io.to(rooms[room].judge).emit('updatePlayers', rooms[room].players)
-        io.to(rooms[room].judge).emit('questionDisplay', {
-          question: question,
-          widthS: rooms[room].width,
-          buzzDeadline: rooms[room].buzzDeadline})
-      }
+      io.to(rooms[room].judge).emit('updatePlayers', rooms[room].players)
+      io.to(rooms[room].judge).emit('questionDisplay', {
+        question: question,
+        widthS: rooms[room].width,
+        buzzDeadline: rooms[room].buzzDeadline})
       for (const play in rooms[room].players) {
         io.to(play).emit('updatePlayers', rooms[room].players)
         io.to(play).emit('questionDisplay', {

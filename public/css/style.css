@@ -480,6 +480,13 @@ img[src$="Title.png"] {
   flex-direction: column;
 }
 
+/* While a question is being shown, the round title stays visible but
+   shouldn't compete for space with #questionField — it collapses to its
+   own natural (small) height instead of stretching. */
+#rounds.compact {
+  flex: 0 0 auto;
+}
+
 #rounds > div {
   width: 100%;
   flex: 1;
@@ -605,18 +612,28 @@ img[src$="Title.png"] {
 }
 
 .questionField {
-  display: grid;
-  height: 90%;
-  grid-template-rows: 80% 10% 10%;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  max-height: 45vh;
+  overflow-y: auto;
   white-space: pre-line;
   font-family: var(--font-body);
-  gap: 8px;
+  padding: 4px;
 }
 
 .gamePicture {
-  max-width: 95%;
-  max-height: 95%;
+  max-width: 100%;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
@@ -872,15 +889,8 @@ input[type="file"]::file-selector-button:active {
    depends on its content, while the bar's width was trying to resolve
    as a percentage OF that same button, a circular reference some
    browsers "solve" by collapsing it to near-zero. Break the cycle by
-   giving every level in the chain an explicit width. */
-#answerField {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
+   giving every level in the chain an explicit width (#answerField's own
+   width:100% is set once, above, alongside its grid layout). */
 #takeQuestion {
   all: unset;
   cursor: pointer;
@@ -1260,6 +1270,8 @@ input[type="file"]::file-selector-button:active {
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--panel-border);
   font-size: 15px;
+  max-height: 30vh;
+  overflow-y: auto;
   animation: lastAnswerIn 0.2s ease-out;
 }
 
@@ -1286,4 +1298,10 @@ input[type="file"]::file-selector-button:active {
 .lastAnswer__text {
   color: var(--text);
   font-weight: 500;
+}
+
+.lastAnswer__correct {
+  color: var(--accent);
+  font-weight: 600;
+  font-family: var(--font-mono);
 }

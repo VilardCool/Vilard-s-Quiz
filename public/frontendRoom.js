@@ -51,7 +51,7 @@ socket.on('loadRoom', (game) => {
     }
 
     roundPlace.innerHTML += `<div id="round_${round}" style="display: none;">
-      <div style="text-align: center; padding-bottom: 3%;">Round: ${round}</div>
+      <div style="text-align: center; padding-bottom: 3%;">Round: ${escapeHtml(game.rounds[round].title || round)}</div>
       <div id="questions" class="questionsButtons">${questionsButtons}</div>
     </div>`
   }

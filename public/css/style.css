@@ -199,14 +199,26 @@ img[src$="Title.png"] {
   padding-bottom: 8px;
 }
 
-/* frontendMain.js sets an inline height:300px on these (fine on a big
-   screen) — too tall for a phone, where several packs should fit
-   without excess scrolling. */
-#hostMenuRooms button {
-  height: auto !important;
+/* Pack picker buttons — no longer fight an inline height (JS no longer
+   sets one), just a normal card sized around its thumbnail + label. */
+#hostMenuRooms button.packPickerButton {
+  height: auto;
   min-height: 64px;
   flex: 1 1 140px;
   max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+}
+
+.packPickerThumb {
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
 }
 
 #hostMenuSettings {
@@ -235,9 +247,13 @@ img[src$="Title.png"] {
 }
 
 @media screen and (min-width: 900px) {
-  #hostMenuRooms button {
-    height: 220px !important;
+  #hostMenuRooms button.packPickerButton {
+    min-height: 220px;
     flex: 0 1 200px;
+  }
+
+  .packPickerThumb {
+    max-height: 160px;
   }
 }
 
@@ -958,6 +974,61 @@ input[type="file"]::file-selector-button:active {
   background: linear-gradient(165deg, var(--bg-800), var(--bg-900));
   border: 1px solid var(--panel-border);
   border-radius: var(--radius);
+}
+
+.packImageRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(165deg, var(--bg-800), var(--bg-900));
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+}
+
+.packImageRow h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.packImageDropzone {
+  position: relative;
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 14px;
+  border: 2px dashed var(--panel-border-strong);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.packImageDropzone:hover {
+  border-color: var(--accent);
+  background: rgba(124, 233, 154, 0.06);
+}
+
+.packImageDropzone__text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.packImageDropzone__img {
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: 8px;
+  pointer-events: none;
 }
 
 .packNameRow h2 {

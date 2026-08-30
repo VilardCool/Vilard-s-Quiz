@@ -181,9 +181,9 @@ io.on('connection', (socket) => {
   }
 
   socket.on('requestProposedRoom', () => {
-    db.listPacks()
-      .then((filesName) => {
-        socket.emit('proposedRoomArray', filesName)
+    db.listPacksWithImages()
+      .then((packs) => {
+        socket.emit('proposedRoomArray', packs)
       })
       .catch((err) => {
         console.error('Failed to list packs from the database:', err.message)

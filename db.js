@@ -144,6 +144,17 @@ async function listPacks() {
   return rows.map((r) => r.name)
 }
 
+// Returns [{name, image}] for the pack picker — pulls just the cover image
+// out of each pack's JSON via a JSON path instead of loading full content
+// (a pack's rounds/questions can be large; the picker only needs the image).
+async function listPacksWithImages() {
+  const { rows } = await pool.query(
+    `SELECT name, content -> name ->> 'image' AS image
+     FROM packs ORDER BY name ASC`
+  )
+  return rows.map((r) => ({ name: r.name, image: r.image || null }))
+}
+
 // Returns the pack's JSON content, or null if not found.
 async function getPack(name) {
   const { rows } = await pool.query(`SELECT content FROM packs WHERE name = $1`, [name])
@@ -186,6 +197,7 @@ module.exports = {
   updatePlayerName,
   updatePlayerPicture,
   listPacks,
+  listPacksWithImages,
   getPack,
   savePack,
   logGameResult,

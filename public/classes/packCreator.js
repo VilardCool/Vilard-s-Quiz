@@ -71,9 +71,12 @@ document.querySelector('#importPack').addEventListener('change', async (event) =
     addRoundButton.click()
     const newRound = addRoundButton.previousElementSibling
 
-    const roundNameInput = newRound.querySelector('input[id^="round_"]')
-    roundNameInput.value = roundKey
-    roundNameInput.dispatchEvent(new Event('change'))
+    // The internal round_N key is assigned fresh by "Add round" above —
+    // only the human-readable title carries over from the imported file
+    // (its own title if the pack already used one, else its old key).
+    const roundTitleInput = newRound.querySelector('input[id^="roundTitle_"]')
+    roundTitleInput.value = importedRound.title || roundKey
+    roundTitleInput.dispatchEvent(new Event('change'))
 
     for (const questionKey in importedRound.questions) {
       const importedQuestion = importedRound.questions[questionKey]
@@ -161,14 +164,19 @@ document.querySelector('#addRound').addEventListener('click', (
 
     numRound = roundCounter++
 
-    pack[Object.keys(pack)[0]].rounds[`round_${numRound}`] = {questions: {}}
+    // The round's identifier (round_N) is stable and never changes — the
+    // display title is a separate, freely-editable field below, so
+    // renaming a round can't collide with another round's key or corrupt
+    // the pack's internal structure.
+    pack[Object.keys(pack)[0]].rounds[`round_${numRound}`] = {questions: {}, title: ""}
 
     newRound.setAttribute("class", "packRound")
+    newRound.setAttribute("id", `round_${numRound}`)
     newRound.setAttribute("name", `round_${numRound}`)
     newRound.dataset.qCounter = "0"
     newRound.innerHTML = `<div class="packRound__header">
       <span class="packRound__badge">Round ${numRound + 1}</span>
-      <input id="round_${numRound}" name="round_${numRound}" type="text" class="form packRound__nameInput" placeholder="round_${numRound}">
+      <input id="roundTitle_${numRound}" type="text" class="form packRound__nameInput" placeholder="Round title (optional)">
       <button type="button" class="packRound__delete" data-action="delete-round" aria-label="Delete round">&times;</button>
     </div>
     <button id="addQuestion_${numRound}" type="button" class="confirmButton c packRound__addQuestion">+ Add question</button>`
@@ -179,18 +187,11 @@ document.querySelector('#addRound').addEventListener('click', (
       newRound.remove()
     })
 
-    document.querySelector(`#round_${numRound}`).addEventListener('change', (
+    document.querySelector(`#roundTitle_${numRound}`).addEventListener('change', (
       event) => {
-        roundName = document.querySelector(`#${event.target.id}`)
-        oldName = roundName.name
-        newName = roundName.value
-        roundName.name = newName
-
-        roundName.parentElement.parentElement.setAttribute("name", `${newName}`)
-
-        valueToReplace = pack[Object.keys(pack)[0]].rounds[oldName]
-        pack[Object.keys(pack)[0]].rounds[newName] = valueToReplace
-        delete pack[Object.keys(pack)[0]].rounds[oldName]
+        const titleInput = document.querySelector(`#${event.target.id}`)
+        const roundDiv = titleInput.parentElement.parentElement
+        pack[Object.keys(pack)[0]].rounds[roundDiv.getAttribute("name")].title = titleInput.value
       }
     )
 

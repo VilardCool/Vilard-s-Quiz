@@ -68,14 +68,16 @@ document.querySelector('#hostMenuClose').addEventListener('click', (event) => {
 // Attached once — always checks the latest list of proposed rooms,
 // instead of re-attaching (and stacking up) a new listener on every open.
 document.querySelector('#hostMenuRooms').addEventListener('click', (event) => {
-  if (currentProposedFiles.includes(event.target.id)){
-    document.querySelector(`#proposedRoom`).value = event.target.id
+  const packButton = event.target.closest('button')
+  if (!packButton) return
+  if (currentProposedFiles.includes(packButton.id)){
+    document.querySelector(`#proposedRoom`).value = packButton.id
     document.querySelector(`#proposedHost`).click()
   }
 })
 
-socket.on('proposedRoomArray', (files) => {
-  currentProposedFiles = files
+socket.on('proposedRoomArray', (packs) => {
+  currentProposedFiles = packs.map((pack) => pack.name)
 
   hostMenuRooms = document.querySelector('#hostMenuRooms')
   hostMenuHost = document.querySelector('#hostMenuHost')
@@ -90,8 +92,13 @@ socket.on('proposedRoomArray', (files) => {
   hostMenuHost.style = "margin-top: 75px;"
   hostMenuSettings.style = "margin-top: 75px;"
 
-  for (file in files) {
-    hostMenuRooms.innerHTML += `<button id="${escapeHtml(files[file])}" class="confirmButton true" style="height: 300px;">${escapeHtml(files[file])}</button>`
+  for (const pack of packs) {
+    const thumb = pack.image
+      ? `<img src="${escapeHtml(pack.image)}" class="packPickerThumb" alt="">`
+      : ''
+    hostMenuRooms.innerHTML += `<button id="${escapeHtml(pack.name)}" class="confirmButton true packPickerButton">
+      ${thumb}<span>${escapeHtml(pack.name)}</span>
+    </button>`
   }
 
   hostMenuSettings.innerHTML = `<div style="display: inline;">Autojudje:</div> <input type="checkbox" id="auto">

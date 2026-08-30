@@ -67,6 +67,15 @@
         <input id="packName" type="text" class="form packNameRow__input" placeholder="Name">
       </div>
 
+      <div class="packImageRow">
+        <h2>Pack image (optional)</h2>
+        <div class="packImageDropzone" id="image_pack_pack">
+          <p class="packImageDropzone__text" id="imageText_pack_pack">Drag and drop an image here, or click to select a file.</p>
+          <input type="file" style="position: relative; z-index: -1" id="file-input_pack_pack" accept="image/*" hidden>
+          <img id="img_pack_pack" class="packImageDropzone__img">
+        </div>
+      </div>
+
       <button id="addRound" type="button" class="confirmButton c createAddRound">+ Add round</button>
 
       <button id="download" class="confirmButton true createDownload">Download pack</button>

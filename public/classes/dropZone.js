@@ -62,6 +62,9 @@ function displayImages(files, numRound, numQuestion) {
             image: base64Data
           })
         }
+      else if (numRound == "pack" && numQuestion == "pack") {
+        pack[Object.keys(pack)[0]].image = base64Data
+      }
       else pack[Object.keys(pack)[0]].rounds[round.getAttribute("name")].questions[question.getAttribute("name")].content = base64Data
       });
     }

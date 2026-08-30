@@ -171,6 +171,12 @@ async function savePack(name, content) {
   )
 }
 
+// Removes a pack from the library. Returns true if a row was actually deleted.
+async function deletePack(name) {
+  const { rowCount } = await pool.query(`DELETE FROM packs WHERE name = $1`, [name])
+  return rowCount > 0
+}
+
 // --- Game results ----------------------------------------------------------
 
 async function logGameResult({ roomName, packName, winnerName, winnerScore }) {
@@ -198,6 +204,7 @@ module.exports = {
   updatePlayerPicture,
   listPacks,
   listPacksWithImages,
+  deletePack,
   getPack,
   savePack,
   logGameResult,

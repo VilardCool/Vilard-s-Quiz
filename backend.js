@@ -16,6 +16,23 @@ app.use(express.urlencoded({ extended: true }))
 
 const port = process.env.PORT || 3000
 
+// Admin access is a single secret token from the environment, not a login
+// form — knowing the URL (which embeds the token) IS the credential. If the
+// token isn't configured, every admin route responds exactly like a normal
+// 404 rather than silently accepting anything.
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || null
+
+function isValidAdminToken(token) {
+  if (!ADMIN_TOKEN || !token) return false
+  const a = Buffer.from(token)
+  const b = Buffer.from(ADMIN_TOKEN)
+  // Buffers must be equal length for timingSafeEqual — a length mismatch
+  // is already a "no", just not a constant-time one (fine: the secret's
+  // length isn't itself sensitive the way its content is).
+  if (a.length !== b.length) return false
+  return crypto.timingSafeEqual(a, b)
+}
+
 const DEFAULT_ANSWER_TIME = 20 // seconds
 const DEFAULT_BUZZ_TIME = 5 // seconds — matches the previous hardcoded client-side window
 const DEFAULT_REVEAL_TIME = 3 // seconds — pause after a verdict before moving on
@@ -85,13 +102,9 @@ app.post("/room", upload.single('pack'), (req, res) => {
     currentQuestion: null
   }
 
-  // Save the uploaded pack into the reusable pack library, so it shows up
-  // next time via "Host → pick a pack". Non-blocking — a save failure here
-  // shouldn't stop the room from starting.
-  const packName = Object.keys(jsonContent)[0]
-  db.savePack(packName, jsonContent).catch((err) => {
-    console.error('Failed to save uploaded pack to the database:', err.message)
-  })
+  // Hosting your own uploaded pack no longer adds it to the shared library —
+  // only an admin can do that now (see the /admin routes below). The pack
+  // still works fine for this room, it just isn't published for everyone.
 
   res.redirect(req.body.room)
 })
@@ -146,6 +159,63 @@ app.post("/proposedRoom", async (req, res) => {
   }
 
   res.redirect(proposedRoom)
+})
+
+// --- Admin: manage the shared pack library --------------------------------
+// Access is a secret token embedded in the URL (ADMIN_TOKEN env var), not a
+// login form. Every one of these routes checks it first and responds with a
+// generic 404 on failure — same as a URL that doesn't exist at all, so an
+// unconfigured or guessed token reveals nothing.
+
+app.get('/admin/:token', async (req, res) => {
+  if (!isValidAdminToken(req.params.token)) {
+    return res.status(404).send('Not Found')
+  }
+
+  let packs = []
+  try {
+    packs = await db.listPacksWithImages()
+  } catch (err) {
+    console.error('Admin: failed to list packs:', err.message)
+  }
+
+  res.render('admin', { token: req.params.token, packs: packs })
+})
+
+app.post('/admin/:token/packs', upload.single('pack'), async (req, res) => {
+  if (!isValidAdminToken(req.params.token)) {
+    return res.status(404).send('Not Found')
+  }
+
+  if (!req.file) {
+    return res.redirect(`/admin/${req.params.token}`)
+  }
+
+  try {
+    const jsonContent = JSON.parse(req.file.buffer.toString('utf8'))
+    const packName = Object.keys(jsonContent)[0]
+    await db.savePack(packName, jsonContent)
+  } catch (err) {
+    console.error('Admin: failed to save pack:', err.message)
+  }
+
+  res.redirect(`/admin/${req.params.token}`)
+})
+
+app.post('/admin/:token/packs/delete', async (req, res) => {
+  if (!isValidAdminToken(req.params.token)) {
+    return res.status(404).send('Not Found')
+  }
+
+  if (req.body.name) {
+    try {
+      await db.deletePack(req.body.name)
+    } catch (err) {
+      console.error('Admin: failed to delete pack:', err.message)
+    }
+  }
+
+  res.redirect(`/admin/${req.params.token}`)
 })
 
 app.get('/:room', (req, res) => {

@@ -1,0 +1,46 @@
+<html translate="no">
+  <head>
+    <meta charset="UTF-8">
+    <title>Vilard's Quiz — Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/img/Logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body class="background">
+    <main class="adminPage">
+      <header style="text-align: center;">
+        <img src="/img/Title.png" alt="Vilard's Quiz">
+        <h1 class="adminPage__heading">Pack library</h1>
+      </header>
+
+      <section class="packImageRow" aria-label="Add a pack">
+        <h2>Add a pack to the library</h2>
+        <form action="/admin/<%= token %>/packs" method="post" enctype="multipart/form-data" class="adminPage__uploadForm">
+          <input name="pack" type="file" accept="application/json" required>
+          <button type="submit" class="confirmButton true">Upload</button>
+        </form>
+      </section>
+
+      <section class="rooms adminPage__list" aria-label="Existing packs">
+        <div>Packs (<%= packs.length %>)</div>
+        <% if (packs.length === 0) { %>
+          <p class="adminPage__empty">No packs in the library yet.</p>
+        <% } %>
+        <% packs.forEach(function(pack) { %>
+          <div class="adminPage__packRow">
+            <% if (pack.image) { %>
+              <img src="<%= pack.image %>" class="adminPage__packThumb" alt="">
+            <% } %>
+            <span class="adminPage__packName"><%= pack.name %></span>
+            <form action="/admin/<%= token %>/packs/delete" method="post" class="adminPage__deleteForm">
+              <input type="hidden" name="name" value="<%= pack.name %>">
+              <button type="submit" class="confirmButton false adminPage__deleteButton" onclick="return confirm('Delete this pack from the library?')">Delete</button>
+            </form>
+          </div>
+        <% }) %>
+      </section>
+    </main>
+  </body>
+</html>

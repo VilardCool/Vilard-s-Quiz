@@ -1376,3 +1376,80 @@ input[type="file"]::file-selector-button:active {
   font-weight: 600;
   font-family: var(--font-mono);
 }
+
+/* ------------------------------------------------------------------ */
+/* Admin page — pack library management                                */
+/* ------------------------------------------------------------------ */
+
+.adminPage {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.adminPage__heading {
+  margin: 10px 0 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--text-dim);
+}
+
+.adminPage__uploadForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.adminPage__uploadForm input[type="file"] {
+  flex: 1 1 220px;
+}
+
+.adminPage__list {
+  min-height: 0;
+}
+
+.adminPage__empty {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.adminPage__packRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--panel-border);
+  margin-bottom: 8px;
+}
+
+.adminPage__packThumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex: 0 0 auto;
+}
+
+.adminPage__packName {
+  flex: 1 1 auto;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.adminPage__deleteForm {
+  flex: 0 0 auto;
+}
+
+.adminPage__deleteButton {
+  width: auto;
+  max-width: none;
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 13px;
+}

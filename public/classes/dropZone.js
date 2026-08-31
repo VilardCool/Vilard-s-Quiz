@@ -22,7 +22,7 @@ function setDropZone(dropZone, numRound, numQuestion){
     }
   })
 
-  input = dropZone.querySelector(`input`)
+  const input = dropZone.querySelector(`input`)
 
   dropZone.addEventListener('click', function() {
     input.click();

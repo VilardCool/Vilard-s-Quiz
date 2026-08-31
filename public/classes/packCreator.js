@@ -62,6 +62,17 @@ document.querySelector('#importPack').addEventListener('change', async (event) =
   packNameInput.value = importedName
   packNameInput.dispatchEvent(new Event('change'))
 
+  // Carry over the pack's cover image too, if the imported file has one.
+  if (importedPack[importedName].image) {
+    const packImg = document.getElementById('img_pack_pack')
+    const packPlaceholder = document.getElementById('imageText_pack_pack')
+    if (packImg) {
+      packImg.src = importedPack[importedName].image
+      if (packPlaceholder) packPlaceholder.remove()
+      pack[Object.keys(pack)[0]].image = importedPack[importedName].image
+    }
+  }
+
   for (const roundKey in importedRounds) {
     const importedRound = importedRounds[roundKey]
 
@@ -109,7 +120,7 @@ document.querySelector('#importPack').addEventListener('change', async (event) =
         if (placeholderText) placeholderText.remove()
         // No <input> fires a 'change' for a pasted-in base64 image, so write
         // it straight into the pack the same way a real drop would.
-        pack[Object.keys(pack)[0]].rounds[roundKey].questions[newQuestion.getAttribute('name')].content = importedQuestion.content
+        pack[Object.keys(pack)[0]].rounds[newRound.getAttribute('name')].questions[newQuestion.getAttribute('name')].content = importedQuestion.content
       }
 
       const questionTextarea = document.querySelector(`#question_${numRound}_${numQuestion}`)
